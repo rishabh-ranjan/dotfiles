@@ -17,6 +17,8 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'Valloric/YouCompleteMe'
+let g:ycm_autoclose_preview_window_after_insertion = 1
+
 " The following are examples of different formats supported.
 " Keep Plugin commands between vundle#begin/end.
 " plugin on GitHub repo
@@ -51,10 +53,10 @@ filetype plugin indent on    " required
 " === Vundle end ===
 
 " Brace matching
-inoremap {<cr> {<cr>}<esc>O<tab>
+" inoremap {<cr> {<cr>}<esc>O<tab>
 
 " Auto indent detection for python
-inoremap :<cr> :<cr><tab>
+" inoremap :<cr> :<cr><tab>
 
 " Enable mouse if available
 if has('mouse')
@@ -93,8 +95,8 @@ set ruler
 
 augroup number_toggle
     autocmd!
-    autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
-    autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
+    autocmd BufEnter,FocusGained,InsertLeave,CmdlineLeave * set relativenumber
+    autocmd BufLeave,FocusLost,InsertEnter,CmdlineEnter * set norelativenumber
 augroup END
 
 " Save undo files
@@ -121,8 +123,9 @@ endif
 set directory=~/.vim/.swap//
 set swapfile
 
-" Highlight searches
+" Tuning searches
 set hlsearch
+set incsearch
 
 set wrap
 
