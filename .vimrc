@@ -95,8 +95,8 @@ set ruler
 
 augroup number_toggle
     autocmd!
-    autocmd BufEnter,FocusGained,InsertLeave,CmdlineLeave * set relativenumber
-    autocmd BufLeave,FocusLost,InsertEnter,CmdlineEnter * set norelativenumber
+    autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
+    autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
 augroup END
 
 " Save undo files
