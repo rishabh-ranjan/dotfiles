@@ -1,9 +1,8 @@
 " Author:   Rishabh Ranjan
-" Last change: 2019 June 17
-" Add new stuff to the top
+" Last change: 2019 June 26
 
 " Keep this stuff right here at the top!
-" === Vundle begin ===
+" { Vundle begin (use % to go to Vundle end)
 set nocompatible              " be iMproved, required
 set encoding=utf8
 filetype off                  " required
@@ -16,32 +15,14 @@ call vundle#begin()
 
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
+" YCM for auto completion
 Plugin 'Valloric/YouCompleteMe'
 let g:ycm_autoclose_preview_window_after_insertion = 1
-
-" The following are examples of different formats supported.
-" Keep Plugin commands between vundle#begin/end.
-" plugin on GitHub repo
-" Plugin 'tpope/vim-fugitive'
-" plugin from http://vim-scripts.org/vim/scripts.html
-" Plugin 'L9'
-" Git plugin not hosted on GitHub
-" Plugin 'git://git.wincent.com/command-t.git'
-" git repos on your local machine (i.e. when working on your own plugin)
-" Plugin 'file:///home/gmarik/path/to/plugin'
-" The sparkup vim script is in a subdirectory of this repo called vim.
-" Pass the path to set the runtimepath properly.
-" Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
-" Install L9 and avoid a Naming conflict if you've already installed a
-" different version somewhere else.
-" Plugin 'ascenator/L9', {'name': 'newL9'}
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
-" To ignore plugin indent changes, instead use:
-"filetype plugin on
-"
+
 " Brief help
 " :PluginList       - lists configured plugins
 " :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
@@ -49,49 +30,43 @@ filetype plugin indent on    " required
 " :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
 "
 " see :h vundle for more details or wiki for FAQ
-" Put your non-Plugin stuff after this line
-" === Vundle end ===
+" Vundle end }
 
-" Brace matching
-" inoremap {<cr> {<cr>}<esc>O<tab>
-
-" Auto indent detection for python
-" inoremap :<cr> :<cr><tab>
-
-" Enable mouse if available
-if has('mouse')
-    set mouse=a
-endif
+" Uses settings from defaults.vim provided by vim (8.0 onward)
+unlet! skip_defaults_vim
+source $VIMRUNTIME/defaults.vim
 
 " Set colorscheme
 " Use gruvbox if available
 if filereadable($HOME.'/.vim/colors/gruvbox.vim')
     let g:gruvbox_contrast_dark='hard'
     colorscheme gruvbox
+    " Better Visual mode highlight
+    highlight Visual cterm=none ctermbg=237 ctermfg=none
     set background=dark
 else
     colorscheme zellner
 endif
 
-" Fix visual highlight
-augroup my_highlight
-    autocmd!
-    autocmd ColorScheme * highlight Visual cterm=none ctermbg=237 ctermfg=none
-augroup END
-
-" Remappings
+" Remap <esc>
 inoremap kj <esc>
 vnoremap kj <esc>
 
-" Backspace
-set backspace=2
+" Remap split movements
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+" Open new split panes to right and bottom
+set splitbelow
+set splitright
 
 " Use system clipboard
 set clipboard=unnamed
 
 " Numbering
 set number relativenumber
-set ruler
 
 augroup number_toggle
     autocmd!
@@ -123,25 +98,11 @@ endif
 set directory=~/.vim/.swap//
 set swapfile
 
-" Tuning searches
-set hlsearch
-set incsearch
-
 set wrap
 
 " Coding related
-
-syntax on
-
 " underlines matching parens
 highlight MatchParen cterm=underline ctermbg=none ctermfg=none
-
-" indentation
-set expandtab           " enter spaces when tab is pressed
-set tabstop=4
-set softtabstop=4
-set shiftwidth=4        " spaces to use for auto indent
-set autoindent          " copy indent from current line when starting a new line
 
 " Add optional packages.
 "

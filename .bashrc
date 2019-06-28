@@ -10,4 +10,6 @@ alias nv='ssh -X nvidia@10.194.28.163'
 export PATH=/usr/local/bin:$PATH
 export EDITOR='/usr/bin/env vim'
 export NV=nvidia@10.194.28.163:/home/nvidia/Documents/catkin_ws/src
+# sets vi mode for the bash command line
+set -o vi
 
