@@ -1,2 +1,2 @@
 # dotfiles
-my config files on my /User/zero home
+Personalized config files for bash, vim, tmux, etc. on my Mac.
