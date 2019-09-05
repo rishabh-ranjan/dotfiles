@@ -42,7 +42,7 @@ if filereadable($HOME.'/.vim/colors/gruvbox.vim')
     let g:gruvbox_contrast_dark='hard'
     colorscheme gruvbox
     " Better Visual mode highlight
-    highlight Visual cterm=none ctermbg=237 ctermfg=none
+    autocmd Colorscheme * highlight Visual cterm=none ctermbg=237 ctermfg=none
     set background=dark
 else
     colorscheme zellner
@@ -58,6 +58,10 @@ nnoremap <C-K> <C-W><C-K>
 nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
 
+" Alternative save using ctrl-s
+inoremap <C-P> <esc>:w<return>i
+nnoremap <C-P> :w<return>
+
 " Open new split panes to right and bottom
 set splitbelow
 set splitright
@@ -67,12 +71,14 @@ set clipboard=unnamed
 
 " Numbering
 set number relativenumber
+inoremap <C-N> <Esc>:setlocal rnu!<Return>i
+nnoremap <C-N> :setlocal rnu!<Return>
 
-augroup number_toggle
-    autocmd!
-    autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
-    autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
-augroup END
+" augroup number_toggle
+"     autocmd!
+"     autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
+"     autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
+" augroup END
 
 " Save undo files
 if !isdirectory($HOME.'/.vim/.undo')
@@ -103,6 +109,8 @@ set wrap
 " Coding related
 " underlines matching parens
 highlight MatchParen cterm=underline ctermbg=none ctermfg=none
+set tabstop=4
+set shiftwidth=4
 
 " Add optional packages.
 "
@@ -114,3 +122,8 @@ if has('syntax') && has('eval')
   packadd! matchit
 endif
 
+" cp related
+" cpp template from ./codebook/template.cpp
+" TODO: use a better way to do this
+inoremap <c-j> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
+nnoremap <c-j> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
