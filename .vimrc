@@ -125,5 +125,5 @@ endif
 " cp related
 " cpp template from ./codebook/template.cpp
 " TODO: use a better way to do this
-inoremap <c-j> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
-nnoremap <c-j> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
+inoremap <c-u> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
+nnoremap <c-u> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
