@@ -15,6 +15,9 @@ call vundle#begin()
 
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
+
+Plugin 'JuliaEditorSupport/julia-vim'
+
 " YCM for auto completion
 Plugin 'Valloric/YouCompleteMe'
 let g:ycm_autoclose_preview_window_after_insertion = 1
@@ -49,8 +52,8 @@ else
 endif
 
 " Remap <esc>
-inoremap kj <esc>
-vnoremap kj <esc>
+"inoremap kj <esc>
+"vnoremap kj <esc>
 
 " Remap split movements
 nnoremap <C-J> <C-W><C-J>
@@ -109,8 +112,8 @@ set wrap
 " Coding related
 " underlines matching parens
 highlight MatchParen cterm=underline ctermbg=none ctermfg=none
-set tabstop=4
-set shiftwidth=4
+set tabstop=2
+set shiftwidth=2
 
 " Add optional packages.
 "
@@ -125,5 +128,10 @@ endif
 " cp related
 " cpp template from ./codebook/template.cpp
 " TODO: use a better way to do this
-inoremap <c-u> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
-nnoremap <c-u> <esc>:%d <bar> r ./codebook/template.cpp<return>GA
+inoremap <c-u> <esc>:%d <bar> r ~/cc/codebook/template.cpp<return>GA
+nnoremap <c-u> <esc>:%d <bar> r ~/cc/codebook/template.cpp<return>GA
+
+" avoid going past col #80
+set cc=80
+set cursorline
+
