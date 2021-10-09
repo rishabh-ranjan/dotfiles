@@ -3,6 +3,7 @@ set backup
 set cursorline
 set laststatus=0
 set list
+set mouse=a
 set swapfile
 set undofile
 
