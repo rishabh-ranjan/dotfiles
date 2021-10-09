@@ -5,6 +5,7 @@ set cursorline
 set laststatus=0
 set list
 set mouse=a
+set nohlsearch
 set swapfile
 set undofile
 
