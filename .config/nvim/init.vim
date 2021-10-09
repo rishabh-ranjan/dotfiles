@@ -1,5 +1,6 @@
 set background=light
 set backup
+set backupdir-=.
 set cursorline
 set laststatus=0
 set list
