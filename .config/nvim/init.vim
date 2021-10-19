@@ -2,10 +2,8 @@ set background=light
 set backup
 set backupdir-=.
 set cursorline
-set laststatus=0
 set list
 set mouse=a
-set nohlsearch
 set swapfile
 set undofile
 
