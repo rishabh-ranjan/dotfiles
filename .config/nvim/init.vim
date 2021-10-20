@@ -11,5 +11,5 @@ call plug#begin()
 Plug 'farmergreg/vim-lastplace'
 Plug 'tpope/vim-commentary'
 Plug 'webdevel/tabulous'
-Plug 'Yggdroot/indentLine'
+Plug 'lukas-reineke/indent-blankline.nvim'
 call plug#end()
