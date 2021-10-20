@@ -6,6 +6,8 @@ set mouse=a
 set swapfile
 set undofile
 
+let g:python_highlight_string_format=1
+
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
 Plug 'lukas-reineke/indent-blankline.nvim'
