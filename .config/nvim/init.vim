@@ -8,7 +8,8 @@ set undofile
 
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
+Plug 'lukas-reineke/indent-blankline.nvim'
+Plug 'numirias/semshi'
 Plug 'tpope/vim-commentary'
 Plug 'webdevel/tabulous'
-Plug 'lukas-reineke/indent-blankline.nvim'
 call plug#end()
