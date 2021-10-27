@@ -1,6 +1,7 @@
 set background=light
 set backup
 set backupdir-=.
+set cc=80
 set list
 set mouse=a
 set swapfile
