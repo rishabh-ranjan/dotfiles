@@ -3,6 +3,7 @@ set backup
 set backupdir-=.
 set cc=80
 set list
+set modelineexpr
 set mouse=a
 set swapfile
 set undofile
