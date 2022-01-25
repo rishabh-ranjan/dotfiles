@@ -2,6 +2,7 @@ set background=light
 set backup
 set backupdir-=.
 set list
+set modelineexpr
 set mouse=a
 set swapfile
 set undofile
