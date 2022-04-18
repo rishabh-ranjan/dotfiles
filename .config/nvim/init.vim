@@ -12,6 +12,8 @@ if !isdirectory(dir)
     call mkdir(dir, 'p', 0700)
 endif
 
+autocmd FileType markdown,text setlocal textwidth=80
+
 let path=stdpath('data').'/site/autoload/plug.vim'
 if empty(glob(path))
         execute '!curl -fLo '.path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
