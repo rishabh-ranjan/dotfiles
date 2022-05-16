@@ -1,6 +1,7 @@
 set background=light
 set backup
 set backupdir-=.
+set clipboard=unnamedplus
 set list
 set modelineexpr
 set mouse=a
