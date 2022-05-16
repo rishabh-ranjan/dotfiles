@@ -2,3 +2,4 @@
 
 export EDITOR='nvim'
 export VISUAL='nvim'
+export VI_MODE_SET_CURSOR=true
