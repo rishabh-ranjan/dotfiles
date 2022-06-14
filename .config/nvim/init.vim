@@ -30,12 +30,13 @@ let g:python_highlight_builtins = 1
 let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
+let g:vim_markdown_math = 1
 
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
 Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'psf/black', { 'branch': 'stable' }
-Plug 'gabrielelana/vim-markdown'
+Plug 'preservim/vim-markdown'
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
