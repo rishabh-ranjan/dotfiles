@@ -3,34 +3,27 @@ set backup
 set backupdir-=.
 set clipboard=unnamedplus
 set list
-set modelineexpr
 set mouse=a
 set swapfile
 set undofile
 
-let dir=stdpath('data').'/backup'
-if !isdirectory(dir)
-    call mkdir(dir, 'p', 0700)
+let backup_dir = stdpath('data').'/backup'
+if !isdirectory(backup_dir)
+	call mkdir(backup_dir, 'p', 0700)
 endif
 
-autocmd FileType markdown,text setlocal textwidth=80
+if !isdirectory($HOME.'/.local/venv/nvim')
+	!python3 -m venv ~/.local/venv/nvim
+	!~/.local/venv/nvim/bin/pip3 install pynvim black
+endif
 
-let path=stdpath('data').'/site/autoload/plug.vim'
-if empty(glob(path))
-        execute '!curl -fLo '.path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
+
+let plug_path=stdpath('data').'/site/autoload/plug.vim'
+if empty(glob(plug_path))
+        execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
         autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
-
-let g:python3_host_prog='/home/rishabh/.miniconda3/envs/pynvim/bin/python'
-
-autocmd BufWritePre *.py execute ':Black'
-
-let g:markdown_enable_spell_checking = 0
-let g:python_highlight_builtins = 1
-let g:python_highlight_exceptions = 1
-let g:python_highlight_string_format = 1
-let g:python_highlight_string_formatting = 1
-let g:vim_markdown_math = 1
 
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
@@ -41,3 +34,20 @@ Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
 call plug#end()
+
+let g:python_highlight_builtins = 1
+let g:python_highlight_exceptions = 1
+let g:python_highlight_string_format = 1
+let g:python_highlight_string_formatting = 1
+let g:vim_markdown_math = 1
+
+augroup tw_for_md_txt
+	autocmd!
+	autocmd FileType markdown,text setlocal textwidth=80
+augroup end
+
+augroup black_on_save
+	autocmd!
+	autocmd BufWritePre *.py Black
+augroup end
+
