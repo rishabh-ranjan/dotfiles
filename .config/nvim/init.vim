@@ -12,9 +12,10 @@ if !isdirectory(backup_dir)
 	call mkdir(backup_dir, 'p', 0700)
 endif
 
-if !isdirectory($HOME.'/.local/venv/nvim')
-	!python3 -m venv ~/.local/venv/nvim
-	!~/.local/venv/nvim/bin/pip3 install pynvim black
+let venv_dir = $HOME.'/.local/venv/nvim'
+if !isdirectory(venv_dir)
+	execute '!python3 -m venv '.venv_dir
+	execute '!'.venv_dir.'/bin/pip3 install pynvim black'
 endif
 
 let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
@@ -22,7 +23,6 @@ let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
 let plug_path=stdpath('data').'/site/autoload/plug.vim'
 if empty(glob(plug_path))
         execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
-        autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
 call plug#begin()
@@ -49,5 +49,11 @@ augroup end
 augroup black_on_save
 	autocmd!
 	autocmd BufWritePre *.py Black
+augroup end
+
+augroup plug_missing
+	autocmd!
+	autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
+				\ | PlugInstall --sync | source $MYVIMRC | endif
 augroup end
 
