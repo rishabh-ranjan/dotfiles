@@ -1,0 +1,4 @@
+create_default_packages:
+	- ipython
+	- pdbr[ipython]
+	- rich
