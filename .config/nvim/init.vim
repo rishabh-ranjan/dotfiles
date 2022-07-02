@@ -28,6 +28,7 @@ endif
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
 Plug 'lukas-reineke/indent-blankline.nvim'
+Plug 'nickeb96/fish.vim'
 Plug 'psf/black', { 'branch': 'stable' }
 Plug 'preservim/vim-markdown'
 Plug 'tpope/vim-commentary'
