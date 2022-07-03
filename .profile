@@ -1,11 +1,18 @@
-for DIR in "$HOME/.linuxbrew" "/home/linuxbrew/.linuxbrew" "/usr/local"
+for brew in "$HOME/.linuxbrew" "/home/linuxbrew/.linuxbrew" "/usr/local"
 do
-	if [ -x "$DIR/bin/brew" ]
+	if [ -x "$brew/bin/brew" ]
 	then
-		eval "$($DIR/bin/brew shellenv)"
+		eval "$($brew/bin/brew shellenv)"
 		break
 	fi
 done
+unset brew
 
-export SHELL="$(which fish)"
-exec "$SHELL"
+fish="$(which fish)"
+if [ -x "$fish" ]
+then
+	export SHELL="$fish"
+	unset fish
+	exec "$SHELL"
+fi
+unset fish
