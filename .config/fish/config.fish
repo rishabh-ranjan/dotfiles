@@ -9,3 +9,5 @@ if status is-interactive
 	set -g fish_cursor_insert line
 	set -g fish_cursor_visual underscore
 end
+
+source "$HOME/.config/fish/custom.fish"
