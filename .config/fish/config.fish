@@ -5,9 +5,11 @@ if status is-interactive
 	end
 
 	fish_vi_key_bindings
-	set -g fsh_cursor_default block
+	set -g fish_cursor_default block
 	set -g fish_cursor_insert line
 	set -g fish_cursor_visual underscore
+
+	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
 end
 
 source "$HOME/.config/fish/custom.fish"
