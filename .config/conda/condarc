@@ -1,5 +1,0 @@
-create_default_packages:
-	- ipython
-	- pdbr[ipython]
-	- pre_commit
-	- rich
