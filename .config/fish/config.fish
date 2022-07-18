@@ -12,6 +12,8 @@ if status is-interactive
 	set -g fish_cursor_insert line
 	set -g fish_cursor_visual underscore
 
+	set -g fish_greeting
+
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
 end
 
