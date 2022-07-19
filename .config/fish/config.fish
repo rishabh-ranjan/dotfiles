@@ -1,5 +1,6 @@
 if status is-interactive
 	set -x LANG en_US.utf8
+	set -x LANGUAGE en_US.utf8
 	set -x LC_ALL en_US.utf8
 	set -x EDITOR nvim
 	set -x VISUAL nvim
@@ -15,7 +16,7 @@ if status is-interactive
 	set -g fish_cursor_insert line
 	set -g fish_cursor_visual underscore
 
-	set -g fish_greeting
+	set -U fish_greeting
 
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
 end
