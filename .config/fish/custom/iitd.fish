@@ -4,5 +4,6 @@ if status is-interactive
 	set -x https_proxy "$ip"
 
 	set -x GRB_LICENSE_FILE "$HOME/.config/gurobi/$hostname.lic"
-	conda activate ilploss
+	# conda activate ilploss
+	conda activate grb
 end
