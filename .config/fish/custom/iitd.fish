@@ -5,5 +5,4 @@ if status is-interactive
 
 	set -x GRB_LICENSE_FILE "$HOME/.config/gurobi/$hostname.lic"
 	# conda activate ilploss
-	conda activate grb
 end
