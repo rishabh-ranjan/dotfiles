@@ -4,4 +4,5 @@ if status is-interactive
 	set -x https_proxy "$ip"
 	set -x HTTP_PROXY "$ip"
 	set -x HTTPS_PROXY "$ip"
+	conda activate stocl
 end
