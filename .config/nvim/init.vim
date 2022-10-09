@@ -27,6 +27,7 @@ endif
 
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
+Plug 'godlygeek/tabular'
 Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black', { 'branch': 'stable' }
