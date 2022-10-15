@@ -5,4 +5,5 @@ if status is-interactive
 	set -x HTTP_PROXY "$ip"
 	set -x HTTPS_PROXY "$ip"
 	conda activate stocl
+	set -x HYDRA_FULL_ERROR "1"
 end
