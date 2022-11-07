@@ -43,14 +43,24 @@ let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
 let g:vim_markdown_math = 1
 
-augroup tw_for_md_txt
+augroup tw_for_txt
 	autocmd!
-	autocmd FileType markdown,text setlocal textwidth=80
+	autocmd FileType markdown,text,plaintex,tex,latex setlocal textwidth=88
+augroup end
+
+augroup noindent_for_tex
+	autocmd!
+	autocmd FileType plaintex,tex,latex setlocal indentexpr=
 augroup end
 
 augroup black_on_save
 	autocmd!
 	autocmd BufWritePre *.py Black
+augroup end
+
+augroup tabularize_on_save
+	autocmd!
+	autocmd BufWritePre *.tex Tabularize /&
 augroup end
 
 augroup plug_missing
