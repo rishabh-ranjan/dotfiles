@@ -2,10 +2,12 @@ set background=light
 set backup
 set backupdir-=.
 set clipboard=unnamedplus
+set linebreak
 set list
 set mouse=a
 set swapfile
 set undofile
+set wrap
 
 let backup_dir = stdpath('data').'/backup'
 if !isdirectory(backup_dir)
@@ -42,12 +44,8 @@ let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
 let g:tabulousLabelNameOptions = ''
+let g:tex_flavor = 'latex'
 let g:vim_markdown_math = 1
-
-augroup tw_for_txt
-	autocmd!
-	autocmd FileType markdown,text,plaintex,tex,latex setlocal textwidth=88
-augroup end
 
 augroup noindent_for_tex
 	autocmd!
