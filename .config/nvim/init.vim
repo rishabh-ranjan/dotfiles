@@ -44,7 +44,6 @@ let g:python_highlight_builtins = 1
 let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
-let g:tabulousLabelNameOptions = ''
 let g:tex_flavor = 'latex'
 let g:vim_markdown_math = 1
 
