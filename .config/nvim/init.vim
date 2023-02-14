@@ -30,6 +30,7 @@ endif
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
 Plug 'godlygeek/tabular'
+Plug 'img-paste-devs/img-paste.vim'
 Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black', { 'branch': 'stable' }
@@ -68,3 +69,7 @@ augroup plug_missing
 				\ | PlugInstall --sync | source $MYVIMRC | endif
 augroup end
 
+augroup img_paste
+	autocmd!
+	autocmd FileType markdown nmap <buffer><silent> <leader>p :call mdip#MarkdownClipboardImage()<CR>
+augroup end
