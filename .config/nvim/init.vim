@@ -20,8 +20,6 @@ if !isdirectory(venv_dir)
 	execute '!'.venv_dir.'/bin/pip3 install pynvim black'
 endif
 
-let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
-
 let plug_path=stdpath('data').'/site/autoload/plug.vim'
 if empty(glob(plug_path))
         execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
@@ -29,6 +27,7 @@ endif
 
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
+Plug 'github/copilot.vim'
 Plug 'godlygeek/tabular'
 Plug 'img-paste-devs/img-paste.vim'
 Plug 'lukas-reineke/indent-blankline.nvim'
@@ -40,10 +39,12 @@ Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
 call plug#end()
 
+let g:copilot_proxy = 'http://proxy.cmu.edu:3128'
 let g:python_highlight_builtins = 1
 let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
+let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
 let g:tex_flavor = 'latex'
 let g:vim_markdown_math = 1
 
