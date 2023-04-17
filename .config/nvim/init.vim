@@ -39,6 +39,8 @@ Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
 call plug#end()
 
+if hostname() == "fac-lipton01.tepper.cmu.edu" or hostname() == "fac-lipton02"
+	let g:copilot_proxy = 'http://proxy.cmu.edu:3128'
 let g:copilot_proxy = 'http://proxy.cmu.edu:3128'
 let g:python_highlight_builtins = 1
 let g:python_highlight_exceptions = 1
