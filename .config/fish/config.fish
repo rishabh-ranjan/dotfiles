@@ -1,9 +1,9 @@
 if status is-interactive
 	set -x EDITOR nvim
 	set -x VISUAL nvim
-	set -x LANG en_US.utf8
-	set -x LANGUAGE en_US.utf8
-	set -x LC_ALL en_US.utf8
+	set -x LANG en_US.UTF-8
+	set -x LANGUAGE en_US.UTF-8
+	set -x LC_ALL en_US.UTF-8
 
 	if not functions --query tide
 		echo '=== setup prompt ===
