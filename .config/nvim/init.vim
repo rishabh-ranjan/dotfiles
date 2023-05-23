@@ -27,6 +27,7 @@ endif
 
 call plug#begin()
 Plug 'farmergreg/vim-lastplace'
+Plug 'francoiscabrol/ranger.vim'
 Plug 'github/copilot.vim'
 Plug 'godlygeek/tabular'
 Plug 'img-paste-devs/img-paste.vim'
