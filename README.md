@@ -85,8 +85,3 @@ Steps to terraform a new machine, mostly for personal reference:
 	```
 	Might give error on the first run because `plug.vim` is not recognized yet, but simply quitting and rerunning `nvim` fixes this.
 
----
-
-My setup looks something like this:
-
-![screen shot of my terminal setup](assets/ss.png)
