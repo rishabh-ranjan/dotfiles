@@ -49,6 +49,7 @@ let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
 let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
 let g:tex_flavor = 'latex'
+let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_math = 1
 
 augroup noindent_for_tex

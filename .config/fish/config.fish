@@ -21,4 +21,6 @@ if status is-interactive
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
 end
 
-source "$HOME/.config/fish/custom.fish"
+if test -e "$HOME/.config/fish/custom.fish"
+	source "$HOME/.config/fish/custom.fish"
+end
