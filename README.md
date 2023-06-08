@@ -85,3 +85,8 @@ Steps to terraform a new machine, mostly for personal reference:
 	```
 	Might give error on the first run because `plug.vim` is not recognized yet, but simply quitting and rerunning `nvim` fixes this.
 
+11. Github login:
+	```bash
+	BROWSER=false gh auth login
+	```
+	Sometimes upgrading `gh` causes trouble. In that case, simply delete the `gh auth` lines from `~/.gitconfig`.
