@@ -63,29 +63,34 @@ Steps to terraform a new machine, mostly for personal reference:
 	```
 	Use 'q' to exit the license.
 
-7. Clean up home directory:
+7. Create the mamba dev environment:
+	```bash
+	mamba env create -f ~/.config/mamba/dev.yml
+	```
+
+8. Clean up home directory:
 	```bash
 	rm -rf .bash_history .bash_logout .bashrc .cache .conda dotfiles Mambaforge-Linux-x86_64.sh
 	ls -a
 	```
 
-8. Add ssh-key with:
+9. Add ssh-key with:
 	```bash
 	ssh-copy-id <username>@<hostname>
 	```
 
-9. If required, add a custom rc for fish at `~/.config/fish/custom/<name>.fish` and link to it (or one of the existing ones) with:
+10. If required, add a custom rc for fish at `~/.config/fish/custom/<name>.fish` and link to it (or one of the existing ones) with:
 	```bash
 	ln -s ~/.config/fish/custom/<name>.fish ~/.config/fish/custom.fish
 	```
 
-10. Neovim should install plugins and do other setup automatically on first run:
+11. Neovim should install plugins and do other setup automatically on first run:
 	```bash
 	nvim
 	```
 	Might give error on the first run because `plug.vim` is not recognized yet, but simply quitting and rerunning `nvim` fixes this.
 
-11. Github login:
+12. Github login:
 	```bash
 	BROWSER=false gh auth login
 	```

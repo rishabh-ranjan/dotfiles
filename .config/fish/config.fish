@@ -19,6 +19,7 @@ if status is-interactive
 	set -U fish_greeting
 
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
+	fish_add_path "$HOME/.mambaforge/envs/dev/bin"
 end
 
 if test -e "$HOME/.config/fish/custom.fish"
