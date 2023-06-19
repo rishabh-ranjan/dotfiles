@@ -4,7 +4,7 @@ if status is-interactive
 	set -x https_proxy "$ip"
 	set -x HTTP_PROXY "$ip"
 	set -x HTTPS_PROXY "$ip"
-	set -x WANDB_SILENT "true"
-	set -x WANDB_CONSOLE "off"
+
+	conda deactivate	# preserves path order wrt dev env for tmux
 	conda activate nsd-expts
 end

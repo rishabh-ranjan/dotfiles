@@ -22,6 +22,8 @@ if status is-interactive
 	fish_add_path "$HOME/.mambaforge/envs/dev/bin"
 
 	set -x WANDB_DIR "$HOME/.wandb"
+	set -x WANDB_SILENT "true"
+	set -x WANDB_CONSOLE "off"
 end
 
 if test -e "$HOME/.config/fish/custom.fish"
