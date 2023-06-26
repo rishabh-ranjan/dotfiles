@@ -19,7 +19,6 @@ if status is-interactive
 	set -U fish_greeting
 
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
-	fish_add_path "$HOME/.mambaforge/envs/dev/bin"
 
 	set -x WANDB_DIR "$HOME/.wandb"
 	set -x WANDB_SILENT "true"
