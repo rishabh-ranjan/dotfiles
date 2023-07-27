@@ -1,0 +1,15 @@
+name: dev
+
+dependencies:
+  - conda-forge::black
+  - conda-forge::ipywidgets
+  - conda-forge::isort
+  - conda-forge::jupyterlab=3.6.4   # jupyterlab_vim doesn't work on jupyterlab=4 yet
+  - conda-forge::jupyterlab_code_formatter
+  - conda-forge::jupyterlab_vim
+  - conda-forge::rich[jupyter]
+
+  - conda-forge::pip
+  - pip:
+    - pdbr[ipython]
+    - gpustat

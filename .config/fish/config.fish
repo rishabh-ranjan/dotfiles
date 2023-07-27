@@ -19,6 +19,10 @@ if status is-interactive
 	set -U fish_greeting
 
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
+
+	set -x WANDB_DIR "$HOME/.wandb"
+	set -x WANDB_SILENT "true"
+	set -x WANDB_CONSOLE "off"
 end
 
 if test -e "$HOME/.config/fish/custom.fish"

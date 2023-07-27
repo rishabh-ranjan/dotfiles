@@ -1,8 +1,0 @@
-dependencies:
-  - conda-forge::ipython
-  - conda-forge::rich[jupyter]
-
-  - conda-forge::pip
-  - pip:
-    - pdbr[ipython]
-    - gpustat
