@@ -62,11 +62,6 @@ augroup black_on_save
 	autocmd BufWritePre *.py Black
 augroup end
 
-augroup tabularize_on_save
-	autocmd!
-	autocmd BufWritePre *.tex Tabularize /&
-augroup end
-
 augroup plug_missing
 	autocmd!
 	autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
