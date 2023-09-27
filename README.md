@@ -95,3 +95,9 @@ Steps to terraform a new machine, mostly for personal reference:
 	BROWSER=false gh auth login
 	```
 	Sometimes upgrading `gh` causes trouble. In that case, simply delete the `gh auth` lines from `~/.gitconfig`.
+
+13. Update home directory permissions:
+	```bash
+	chmod 750 ~
+ 	```
+ 	This gives you read-write-execute, group users read-execute, and other users no permissions.
