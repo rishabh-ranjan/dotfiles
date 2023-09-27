@@ -37,6 +37,8 @@ Steps to terraform a new machine, mostly for personal reference:
 	```bash
 	brew bundle install
 	```
+ 	If `brew` is not on path due to some reason (like doing a fresh login), simply use `~/.linuxbrew/bin/brew` instead.
+
 	This can take upto an hour on Linux w/o sudo (since Homebrew must do source installs).
 
 	If neovim fails to install, try:
@@ -46,7 +48,7 @@ Steps to terraform a new machine, mostly for personal reference:
 	brew install neovim --head
 	```
 
-5. At this point, we can ssh into the machine again. As per the message, setup prompt:
+6. At this point, we can ssh into the machine again. As per the message, setup prompt:
 	```bash
 	fisher install IlanCosman/tide@v5
 	echo 1 1 3 2 2 1 1 1 y | tide configure > /dev/null
@@ -55,7 +57,7 @@ Steps to terraform a new machine, mostly for personal reference:
 
 	Login again for the prompt to take effect.
 
-6. Install [mambaforge](https://github.com/conda-forge/miniforge#mambaforge):
+7. Install [mambaforge](https://github.com/conda-forge/miniforge#mambaforge):
 	```bash
 	aria2c https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh # for linux
 	chmod +x Mambaforge-Linux-x86_64.sh
@@ -63,40 +65,40 @@ Steps to terraform a new machine, mostly for personal reference:
 	```
 	Use 'q' to exit the license.
 
-7. Create the mamba dev environment:
+8. Create the mamba dev environment:
 	```bash
 	mamba env create -f ~/.config/mamba/dev.yml
 	```
 
-8. Clean up home directory:
+9. Clean up home directory:
 	```bash
 	rm -rf .bash_history .bash_logout .bashrc .cache .conda dotfiles Mambaforge-Linux-x86_64.sh
 	ls -a
 	```
 
-9. Add ssh-key with:
+10. Add ssh-key with:
 	```bash
 	ssh-copy-id <username>@<hostname>
 	```
 
-10. If required, add a custom rc for fish at `~/.config/fish/custom/<name>.fish` and link to it (or one of the existing ones) with:
+11. If required, add a custom rc for fish at `~/.config/fish/custom/<name>.fish` and link to it (or one of the existing ones) with:
 	```bash
 	ln -s ~/.config/fish/custom/<name>.fish ~/.config/fish/custom.fish
 	```
 
-11. Neovim should install plugins and do other setup automatically on first run:
+12. Neovim should install plugins and do other setup automatically on first run:
 	```bash
 	nvim
 	```
 	Might give error on the first run because `plug.vim` is not recognized yet, but simply quitting and rerunning `nvim` fixes this.
 
-12. Github login:
+13. Github login:
 	```bash
 	BROWSER=false gh auth login
 	```
 	Sometimes upgrading `gh` causes trouble. In that case, simply delete the `gh auth` lines from `~/.gitconfig`.
 
-13. Update home directory permissions:
+14. Update home directory permissions:
 	```bash
 	chmod 750 ~
  	```
