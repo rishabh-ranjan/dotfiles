@@ -33,7 +33,7 @@ Steps to terraform a new machine, mostly for personal reference:
 	mamba env update -f ~/.config/mamba/base.yml --prune
 	```
 
-5. At this point, we can ssh into the machine again. As per the message, setup prompt:
+6. At this point, we can ssh into the machine again. As per the message, setup prompt:
 	```bash
 	fisher install IlanCosman/tide@v5
 	echo 1 1 3 2 2 1 1 1 y | tide configure > /dev/null
