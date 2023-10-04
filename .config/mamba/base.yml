@@ -1,0 +1,13 @@
+name: base
+
+dependencies:
+  - conda-forge::aria2
+  - conda-forge::fish
+  - conda-forge::gh
+  - conda-forge::git
+  - conda-forge::grip
+  - conda-forge::mamba
+  - conda-forge::nodejs
+  - conda-forge::ranger-fm
+  - conda-forge::tmux
+  - conda-forge::tree

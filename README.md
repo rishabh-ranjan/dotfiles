@@ -7,20 +7,7 @@ Steps to terraform a new machine, mostly for personal reference:
 	cd ~
 	```
 
-2. Install [brew](https://brew.sh):
-	1. On MacOS or Linux w/ sudo:
-		```bash
-		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-		```
-
-	2. On Linux w/o sudo:
-		```bash
-		git clone https://github.com/Homebrew/brew .linuxbrew
-		eval "$(.linuxbrew/bin/brew shellenv)"
-		brew update --force --quiet
-		```
-
-3.  Install dotfiles:
+2.  Install dotfiles:
 	```bash
 	git clone https://github.com/rishabh-ranjan/dotfiles
 	cp -r dotfiles/* dotfiles/.* .
@@ -33,17 +20,17 @@ Steps to terraform a new machine, mostly for personal reference:
 	cp: cannot create regular file '/home/rishabhr/.git/objects/pack/pack-c20af10d644dc847dce7d997b0fbaedcfaf40108.idx': Permission denied
 	```
 
-4. Install brew packages (in a `tmux` session if possible):
+3. Install [mambaforge](https://github.com/conda-forge/miniforge#mambaforge):
 	```bash
-	brew bundle install
+	aria2c https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh # for linux
+	chmod +x Mambaforge-Linux-x86_64.sh
+	echo -e "\nyes\n~/.mambaforge\nno" | ./Mambaforge-Linux-x86_64.sh
 	```
-	This can take upto an hour on Linux w/o sudo (since Homebrew must do source installs).
+	Use 'q' to exit the license.
 
-	If neovim fails to install, try:
+4. Update the mamba base environment:
 	```bash
-	brew uninstall neovim
-	brew uninstall --force libvterm
-	brew install neovim --head
+	mamba env update -f ~/.config/mamba/base.yml --prune
 	```
 
 5. At this point, we can ssh into the machine again. As per the message, setup prompt:
@@ -55,48 +42,37 @@ Steps to terraform a new machine, mostly for personal reference:
 
 	Login again for the prompt to take effect.
 
-6. Install [mambaforge](https://github.com/conda-forge/miniforge#mambaforge):
-	```bash
-	aria2c https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh # for linux
-	chmod +x Mambaforge-Linux-x86_64.sh
-	echo -e "\nyes\n~/.mambaforge\nno" | ./Mambaforge-Linux-x86_64.sh
-	```
-	Use 'q' to exit the license.
+6. Install `neovim` from the Releases page <https://github.com/neovim/neovim/releases>. [TODO: detailed commands]
 
-7. Create the mamba dev environment:
-	```bash
-	mamba env create -f ~/.config/mamba/dev.yml
-	```
-
-8. Clean up home directory:
+7. Clean up home directory:
 	```bash
 	rm -rf .bash_history .bash_logout .bashrc .cache .conda dotfiles Mambaforge-Linux-x86_64.sh
 	ls -a
 	```
 
-9. Add ssh-key with:
+8. Add ssh-key with:
 	```bash
 	ssh-copy-id <username>@<hostname>
 	```
 
-10. If required, add a custom rc for fish at `~/.config/fish/custom/<name>.fish` and link to it (or one of the existing ones) with:
+9. If required, add a custom rc for fish at `~/.config/fish/custom/<name>.fish` and link to it (or one of the existing ones) with:
 	```bash
 	ln -s ~/.config/fish/custom/<name>.fish ~/.config/fish/custom.fish
 	```
 
-11. Neovim should install plugins and do other setup automatically on first run:
+10. Neovim should install plugins and do other setup automatically on first run:
 	```bash
 	nvim
 	```
 	Might give error on the first run because `plug.vim` is not recognized yet, but simply quitting and rerunning `nvim` fixes this.
 
-12. Github login:
+11. Github login:
 	```bash
 	BROWSER=false gh auth login
 	```
 	Sometimes upgrading `gh` causes trouble. In that case, simply delete the `gh auth` lines from `~/.gitconfig`.
 
-13. Update home directory permissions:
+12. Update home directory permissions:
 	```bash
 	chmod 750 ~
  	```
