@@ -11,3 +11,7 @@ dependencies:
   - conda-forge::ranger-fm
   - conda-forge::tmux
   - conda-forge::tree
+
+  - conda-forge::pip
+  - pip:
+    - gpustat
