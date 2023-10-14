@@ -5,12 +5,6 @@ if status is-interactive
 	set -x LANGUAGE en_US.UTF-8
 	set -x LC_ALL en_US.UTF-8
 
-	if not functions --query tide
-		echo '=== setup prompt ===
-			fisher install IlanCosman/tide@v5
-			echo 1 1 3 2 2 1 1 1 y | tide configure > /dev/null'
-	end
-
 	fish_vi_key_bindings
 	set -g fish_cursor_default block
 	set -g fish_cursor_insert line
@@ -18,7 +12,10 @@ if status is-interactive
 
 	set -U fish_greeting
 
+	fish_add_path --path "$HOME/.local/bin"
+
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
+	conda activate base
 
 	set -x WANDB_DIR "$HOME/.wandb"
 	set -x WANDB_SILENT "true"

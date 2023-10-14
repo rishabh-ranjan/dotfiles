@@ -6,12 +6,27 @@ dependencies:
   - conda-forge::gh
   - conda-forge::git
   - conda-forge::grip
+  - conda-forge::ipython
+  - conda-forge::jless
   - conda-forge::mamba
   - conda-forge::nodejs
   - conda-forge::ranger-fm
   - conda-forge::tmux
   - conda-forge::tree
 
+  ### dev ###
+  - conda-forge::black
+  - conda-forge::ipywidgets
+  - conda-forge::isort
+  - conda-forge::jupyterlab
+  - conda-forge::jupyterlab_code_formatter
+  - conda-forge::jupyterlab_execute_time
+  - conda-forge::jupyterlab_vim
+  - conda-forge::rich[jupyter]
+
   - conda-forge::pip
   - pip:
+
+    ### dev ###
+    - pdbr[ipython]
     - gpustat
