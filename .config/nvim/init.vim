@@ -26,14 +26,13 @@ if empty(glob(plug_path))
 endif
 
 call plug#begin()
+Plug 'elijahdanko/lf.vim'
 Plug 'farmergreg/vim-lastplace'
-Plug 'francoiscabrol/ranger.vim'
 Plug 'github/copilot.vim'
-Plug 'godlygeek/tabular'
 Plug 'img-paste-devs/img-paste.vim'
-Plug 'lukas-reineke/indent-blankline.nvim'
+Plug 'lervag/vimtex'
 Plug 'nickeb96/fish.vim'
-Plug 'psf/black', { 'branch': 'stable' }
+Plug 'psf/black'
 Plug 'preservim/vim-markdown'
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
@@ -72,3 +71,4 @@ augroup img_paste
 	autocmd!
 	autocmd FileType markdown nmap <buffer><silent> <leader>p :call mdip#MarkdownClipboardImage()<CR>
 augroup end
+
