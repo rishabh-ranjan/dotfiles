@@ -15,7 +15,8 @@ if status is-interactive
 	fish_add_path --path "$HOME/.local/bin"
 
 	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
-	conda activate base
+	fish_add_path --path "$HOME/.mambaforge/bin"
+	# conda activate base
 
 	set -x WANDB_DIR "$HOME/.wandb"
 	set -x WANDB_SILENT "true"
