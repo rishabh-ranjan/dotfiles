@@ -23,6 +23,8 @@ if status is-interactive
 	set -x WANDB_CONSOLE "off"
 
 	fish_add_path "$HOME/.local/bin"
+
+	set -x PYTHONPATH "$HOME/.config/python"
 end
 
 if test -e "$HOME/.config/fish/custom.fish"
