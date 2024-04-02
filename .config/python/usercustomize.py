@@ -2,10 +2,8 @@ from pathlib import Path
 import sys
 
 try:
-    tmp = str(
-        next(Path("~/.mambaforge/lib").expanduser().glob("python*")) / "site-packages"
-    )
-    sys.path.append(tmp)
+    p = next(Path("~/.mambaforge/lib").expanduser().glob("python*")) / "site-packages"
+    sys.path.append(str(p))
 except:
     pass
 
@@ -16,9 +14,10 @@ except ImportError:
     pass
 
 try:
+    from rich.console import Console
     from rich.traceback import install
 
-    install()
+    install(console=Console(no_color=True))
 except ImportError:
     pass
 
