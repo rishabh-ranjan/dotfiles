@@ -19,8 +19,8 @@ if status is-interactive
 	# conda activate base
 
 	set -x WANDB_DIR "$HOME/.wandb"
-	set -x WANDB_SILENT "true"
-	set -x WANDB_CONSOLE "off"
+	# set -x WANDB_SILENT "true"
+	# set -x WANDB_CONSOLE "off"
 
 	fish_add_path "$HOME/.local/bin"
 
