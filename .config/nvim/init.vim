@@ -34,6 +34,7 @@ Plug 'lervag/vimtex'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black'
 Plug 'preservim/vim-markdown'
+Plug 'rbgrouleff/bclose.vim'  " dependency of ranger.vim
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
@@ -47,6 +48,7 @@ let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
 let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
+let g:ranger_replace_netrw = 1
 let g:tex_flavor = 'latex'
 let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_math = 1

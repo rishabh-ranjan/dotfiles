@@ -1,4 +1,8 @@
 # vim: set ft=bash
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
 fish="$HOME/.mambaforge/bin/fish"
 if [ -x "$fish" ]
 then

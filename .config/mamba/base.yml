@@ -8,14 +8,17 @@ dependencies:
   - conda-forge::grip
   - conda-forge::ipython
   - conda-forge::jless
+  - conda-forge::kaggle
   - conda-forge::mamba
   - conda-forge::nodejs
-  - conda-forge::ranger-fm
+  - conda-forge::nvim
+  - conda-forge::pv
   - conda-forge::tmux
   - conda-forge::tree
 
   ### dev ###
-  - conda-forge::black
+  - conda-forge::nb_conda_kernels
+  - conda-forge::black[jupyter]
   - conda-forge::ipywidgets
   - conda-forge::isort
   - conda-forge::jupyterlab
