@@ -69,6 +69,6 @@ augroup end
 
 augroup img_paste
 	autocmd!
-	autocmd FileType markdown nmap <buffer><silent> <leader>p :call mdip#MarkdownClipboardImage()<CR>
+	autocmd FileType * nmap <buffer><silent> <leader>p :call mdip#MarkdownClipboardImage()<CR>
 augroup end
 
