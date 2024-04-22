@@ -28,27 +28,25 @@ endif
 call plug#begin()
 Plug 'elijahdanko/lf.vim'
 Plug 'farmergreg/vim-lastplace'
-Plug 'github/copilot.vim'
 Plug 'img-paste-devs/img-paste.vim'
 Plug 'lervag/vimtex'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black'
 Plug 'preservim/vim-markdown'
-Plug 'rbgrouleff/bclose.vim'  " dependency of ranger.vim
+Plug 'rbgrouleff/bclose.vim'  " dependency of lf.vim
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
+Plug 'zbirenbaum/copilot.lua'
+Plug 'nvim-lua/plenary.nvim'
+Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
 call plug#end()
 
-if hostname() == "fac-lipton01.tepper.cmu.edu" || hostname() == "fac-lipton02"
-	let g:copilot_proxy = 'http://proxy.cmu.edu:3128'
-endif
 let g:python_highlight_builtins = 1
 let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
 let g:python_highlight_string_formatting = 1
 let g:python3_host_prog = '~/.local/venv/nvim/bin/python3'
-let g:ranger_replace_netrw = 1
 let g:tex_flavor = 'latex'
 let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_math = 1
@@ -73,4 +71,13 @@ augroup img_paste
 	autocmd!
 	autocmd FileType * nmap <buffer><silent> <leader>p :call mdip#MarkdownClipboardImage()<CR>
 augroup end
+
+lua << EOF
+require('copilot').setup({
+	suggestion = {
+		auto_trigger = true,
+	},
+})
+require('CopilotChat').setup()
+EOF
 
