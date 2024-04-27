@@ -1,4 +1,4 @@
-name: base
+name: sw
 
 dependencies:
   - conda-forge::aria2

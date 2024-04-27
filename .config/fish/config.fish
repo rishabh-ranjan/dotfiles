@@ -13,20 +13,20 @@ if status is-interactive
 	set -U fish_greeting
 
 	fish_add_path --path "$HOME/.local/bin"
-
-	source "$HOME/.mambaforge/etc/fish/conf.d/conda.fish"
-	fish_add_path --path "$HOME/.mambaforge/bin"
-	# conda activate base
+	fish_add_path --path "$HOME/.micromamba/envs/sw/bin"
 
 	set -x WANDB_DIR "$HOME/.cache/wandb"
 	# set -x WANDB_SILENT "true"
 	# set -x WANDB_CONSOLE "off"
 
-	fish_add_path "$HOME/.local/bin"
-
 	set -x PYTHONPATH "$HOME/.config/python"
+
+	set -gx MAMBA_EXE "$HOME/.local/bin/micromamba"
+	set -gx MAMBA_ROOT_PREFIX "$HOME/.micromamba"
+	$MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX | source
 end
 
 if test -e "$HOME/.config/fish/custom.fish"
 	source "$HOME/.config/fish/custom.fish"
 end
+
