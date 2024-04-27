@@ -15,8 +15,6 @@ dependencies:
   - conda-forge::pv
   - conda-forge::tmux
   - conda-forge::tree
-
-  ### dev ###
   - conda-forge::nb_conda_kernels
   - conda-forge::black[jupyter]
   - conda-forge::ipywidgets
@@ -29,7 +27,6 @@ dependencies:
 
   - conda-forge::pip
   - pip:
-
-    ### dev ###
     - pdbr[ipython]
     - gpustat
+    - uv
