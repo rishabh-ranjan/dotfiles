@@ -2,6 +2,7 @@ set background=light
 set backup
 set backupdir-=.
 set clipboard=unnamedplus
+set cc=88
 set linebreak
 set list
 set mouse=a
