@@ -9,7 +9,6 @@ dependencies:
   - conda-forge::ipython
   - conda-forge::jless
   - conda-forge::kaggle
-  - conda-forge::mamba
   - conda-forge::nodejs
   - conda-forge::nvim
   - conda-forge::pv

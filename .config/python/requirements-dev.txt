@@ -1,0 +1,11 @@
+black[jupyter]
+ipywidgets
+isort
+jupyterlab
+jupyterlab_code_formatter
+jupyterlab_execute_time
+jupyterlab_vim
+rich[jupyter]
+pdbr[ipython]
+gpustat
+uv
