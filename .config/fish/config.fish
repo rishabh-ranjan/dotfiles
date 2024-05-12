@@ -15,9 +15,9 @@ if status is-interactive
 	fish_add_path --path "$HOME/.local/bin"
 	fish_add_path --path "$HOME/.micromamba/envs/sw/bin"
 
-	set -x WANDB_DIR "$HOME/.cache/wandb"
-	# set -x WANDB_SILENT "true"
-	# set -x WANDB_CONSOLE "off"
+	set -x WANDB_DIR "$HOME/.cache/"
+	set -x WANDB_SILENT "true"
+	set -x WANDB_CONSOLE "off"
 
 	set -x PYTHONPATH "$HOME/.config/python"
 

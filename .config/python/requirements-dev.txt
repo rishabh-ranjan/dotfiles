@@ -8,4 +8,3 @@ jupyterlab_vim
 rich[jupyter]
 pdbr[ipython]
 gpustat
-uv

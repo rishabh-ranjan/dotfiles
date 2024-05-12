@@ -2,7 +2,10 @@ from pathlib import Path
 import sys
 
 try:
-    p = next(Path("~/.mambaforge/lib").expanduser().glob("python*")) / "site-packages"
+    p = (
+        next(Path("~/.micromamba/envs/sw/lib").expanduser().glob("python*"))
+        / "site-packages"
+    )
     sys.path.append(str(p))
     append = True
 except:
