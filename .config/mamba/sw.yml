@@ -24,8 +24,8 @@ dependencies:
   # - conda-forge::jupyterlab_vim
   # - conda-forge::rich[jupyter]
 
-   - conda-forge::pip
-   - pip:
-     - uv
-     # - pdbr[ipython]
-     # - gpustat
+  - conda-forge::pip
+  - pip:
+    - uv
+    # - pdbr[ipython]
+    # - gpustat

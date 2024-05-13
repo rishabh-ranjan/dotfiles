@@ -23,7 +23,7 @@ endif
 
 let plug_path=stdpath('data').'/site/autoload/plug.vim'
 if empty(glob(plug_path))
-        execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+	execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 endif
 
 call plug#begin()
@@ -41,6 +41,7 @@ Plug 'webdevel/tabulous'
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
+Plug 'lukas-reineke/indent-blankline.nvim'
 call plug#end()
 
 let g:python_highlight_builtins = 1
@@ -80,5 +81,6 @@ require('copilot').setup({
 	},
 })
 require('CopilotChat').setup()
+require('ibl').setup()
 EOF
 
