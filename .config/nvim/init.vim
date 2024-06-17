@@ -33,7 +33,7 @@ Plug 'img-paste-devs/img-paste.vim'
 Plug 'lervag/vimtex'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black'
-Plug 'preservim/vim-markdown'
+" Plug 'preservim/vim-markdown'
 Plug 'rbgrouleff/bclose.vim'  " dependency of lf.vim
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
