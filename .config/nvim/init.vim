@@ -18,12 +18,12 @@ endif
 let venv_dir = $HOME.'/.local/venv/nvim'
 if !isdirectory(venv_dir)
 	execute '!python3 -m venv '.venv_dir
-	execute '!'.venv_dir.'/bin/pip3 install pynvim black'
+	execute '!'.venv_dir.'/bin/pip3 install pynvim black isort'
 endif
 
 let plug_path=stdpath('data').'/site/autoload/plug.vim'
 if empty(glob(plug_path))
-        execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+	execute '!curl -fLo '.plug_path.' --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 endif
 
 call plug#begin()
@@ -41,8 +41,11 @@ Plug 'webdevel/tabulous'
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
+" Plug 'lukas-reineke/indent-blankline.nvim'
+Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 call plug#end()
 
+let g:isort_command = 'isort --profile black'
 let g:python_highlight_builtins = 1
 let g:python_highlight_exceptions = 1
 let g:python_highlight_string_format = 1
@@ -60,6 +63,7 @@ augroup end
 augroup black_on_save
 	autocmd!
 	autocmd BufWritePre *.py Black
+	" autocmd BufWritePre *.py Isort
 augroup end
 
 augroup plug_missing
@@ -80,5 +84,6 @@ require('copilot').setup({
 	},
 })
 require('CopilotChat').setup()
+-- require('ibl').setup()
 EOF
 

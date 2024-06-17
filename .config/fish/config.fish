@@ -13,20 +13,17 @@ if status is-interactive
 	set -U fish_greeting
 
 	fish_add_path --path "$HOME/.local/bin"
-	fish_add_path --path "$HOME/.micromamba/envs/sw/bin"
+	fish_add_path --path "$HOME/micromamba/envs/sw/bin"
 
-	set -x WANDB_DIR "$HOME/.cache/wandb"
-	# set -x WANDB_SILENT "true"
-	# set -x WANDB_CONSOLE "off"
+	set -x WANDB_DIR "$HOME/.cache/"
+	set -x WANDB_SILENT "true"
+	set -x WANDB_CONSOLE "off"
 
 	set -x PYTHONPATH "$HOME/.config/python"
 
 	set -gx MAMBA_EXE "$HOME/.local/bin/micromamba"
-	set -gx MAMBA_ROOT_PREFIX "$HOME/.micromamba"
+	set -gx MAMBA_ROOT_PREFIX "$HOME/micromamba"
 	$MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX | source
-end
 
-if test -e "$HOME/.config/fish/custom.fish"
-	source "$HOME/.config/fish/custom.fish"
+	micromamba activate $MY_ENV
 end
-
