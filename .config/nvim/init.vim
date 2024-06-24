@@ -1,3 +1,4 @@
+colorscheme vim
 set background=light
 set backup
 set backupdir-=.
