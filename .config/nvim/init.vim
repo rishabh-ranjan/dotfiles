@@ -44,6 +44,7 @@ Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
 " Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
+Plug 'neovim/nvim-lspconfig'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -85,6 +86,6 @@ require('copilot').setup({
 	},
 })
 require('CopilotChat').setup()
--- require('ibl').setup()
+require('lspconfig').ruff_lsp.setup{}
 EOF
 
