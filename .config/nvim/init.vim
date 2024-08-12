@@ -86,6 +86,6 @@ require('copilot').setup({
 	},
 })
 require('CopilotChat').setup()
-require('lspconfig').ruff_lsp.setup{}
+-- require('lspconfig').ruff_lsp.setup{}
 EOF
 
