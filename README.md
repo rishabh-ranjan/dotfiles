@@ -1,5 +1,7 @@
 # dotfiles
 
+(Outdated: I use micromamba now, and keep my softwares in an environment named `sw`, not touching `base`.)
+
 Steps to terraform a new machine, mostly for personal reference:
 
 1. Change to home directory:
