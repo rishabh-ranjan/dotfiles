@@ -56,9 +56,9 @@ let g:tex_flavor = 'latex'
 let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_math = 1
 
-augroup noindent_for_tex
+augroup noindent
 	autocmd!
-	autocmd FileType plaintex,tex,latex setlocal indentexpr=
+	autocmd FileType plaintex,tex,latex,html setlocal indentexpr=
 augroup end
 
 augroup black_on_save

@@ -11,7 +11,7 @@ dependencies:
   - conda-forge::kaggle
   - conda-forge::nodejs
   - conda-forge::nvim
-  - conda-forge::pv
+  # - conda-forge::pv
   - conda-forge::tmux
   - conda-forge::tree
   # - conda-forge::nb_conda_kernels
