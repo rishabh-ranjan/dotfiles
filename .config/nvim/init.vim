@@ -9,7 +9,6 @@ set list
 set mouse=a
 set swapfile
 set undofile
-set wrap
 
 let backup_dir = stdpath('data').'/backup'
 if !isdirectory(backup_dir)

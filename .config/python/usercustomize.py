@@ -17,14 +17,14 @@ try:
 except ImportError:
     pass
 
-try:
-    # from rich.console import Console
-    from rich.traceback import install
+# try:
+#     # from rich.console import Console
+#     from rich.traceback import install
 
-    # install(console=Console(no_color=True))
-    install()
-except ImportError:
-    pass
+#     # install(console=Console(no_color=True))
+#     install()
+# except ImportError:
+#     pass
 
 if append:
     sys.path.pop()
