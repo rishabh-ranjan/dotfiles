@@ -6,6 +6,7 @@ dependencies:
   - conda-forge::gh
   - conda-forge::git
   - conda-forge::grip
+  - conda-forge::htop
   - conda-forge::ipython
   - conda-forge::jless
   - conda-forge::kaggle
