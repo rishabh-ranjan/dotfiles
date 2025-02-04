@@ -2,8 +2,8 @@ colorscheme vim
 set background=light
 set backup
 set backupdir-=.
-set clipboard=unnamedplus
 set cc=88
+set clipboard=unnamedplus
 set linebreak
 set list
 set mouse=a
@@ -44,6 +44,8 @@ Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
 " Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'neovim/nvim-lspconfig'
+Plug 'pechorin/any-jump.vim'
+Plug 'wellle/context.vim'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -60,6 +62,11 @@ augroup noindent
 	autocmd!
 	autocmd FileType plaintex,tex,latex,html setlocal indentexpr=
 augroup end
+
+" augroup cc_for_py
+" 	autocmd!
+" 	autocmd FileType python setlocal colorcolumn=88
+" augroup end
 
 augroup black_on_save
 	autocmd!
@@ -79,12 +86,24 @@ augroup img_paste
 augroup end
 
 lua << EOF
-require('copilot').setup({
+require'copilot'.setup{
 	suggestion = {
 		auto_trigger = true,
 	},
-})
-require('CopilotChat').setup()
+	filetypes = {
+	    yaml = true,
+	    markdown = true,
+	    help = false,
+	    gitcommit = false,
+	    gitrebase = false,
+	    hgcommit = false,
+	    svn = false,
+	    cvs = false,
+	    ["."] = true,
+	  },
+}
+require'CopilotChat'.setup{}
+-- require'treesitter-context'.setup{}
 -- require('lspconfig').ruff_lsp.setup{}
 EOF
 
