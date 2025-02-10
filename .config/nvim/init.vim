@@ -40,7 +40,7 @@ Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
-Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
+Plug 'CopilotC-Nvim/CopilotChat.nvim'
 " Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'neovim/nvim-lspconfig'
