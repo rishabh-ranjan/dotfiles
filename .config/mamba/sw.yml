@@ -24,6 +24,7 @@ dependencies:
   # - conda-forge::jupyterlab_execute_time
   # - conda-forge::jupyterlab_vim
   # - conda-forge::rich[jupyter]
+  - conda-forge::the_silver_searcher
 
   - conda-forge::pip
   - pip:
