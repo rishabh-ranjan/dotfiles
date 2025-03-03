@@ -7,6 +7,7 @@ set clipboard=unnamedplus
 set linebreak
 set list
 set mouse=a
+set number
 set swapfile
 set undofile
 
@@ -41,7 +42,7 @@ Plug 'webdevel/tabulous'
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim'
-" Plug 'lukas-reineke/indent-blankline.nvim'
+Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'neovim/nvim-lspconfig'
 Plug 'pechorin/any-jump.vim'
@@ -103,6 +104,7 @@ require'copilot'.setup{
 	  },
 }
 require'CopilotChat'.setup{}
+require'ibl'.setup{}
 -- require'treesitter-context'.setup{}
 -- require('lspconfig').ruff_lsp.setup{}
 EOF
