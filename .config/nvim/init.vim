@@ -42,11 +42,11 @@ Plug 'webdevel/tabulous'
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim'
-Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'neovim/nvim-lspconfig'
 Plug 'pechorin/any-jump.vim'
 Plug 'wellle/context.vim'
+Plug 'nvimdev/indentmini.nvim'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -104,7 +104,7 @@ require'copilot'.setup{
 	  },
 }
 require'CopilotChat'.setup{}
-require'ibl'.setup{}
+require'indentmini'.setup{}
 -- require'treesitter-context'.setup{}
 -- require('lspconfig').ruff_lsp.setup{}
 EOF
