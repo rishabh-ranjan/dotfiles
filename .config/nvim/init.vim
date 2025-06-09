@@ -28,14 +28,13 @@ if empty(glob(plug_path))
 endif
 
 call plug#begin()
-Plug 'elijahdanko/lf.vim'
+Plug 'yuzhegan/lf.vim'
 Plug 'farmergreg/vim-lastplace'
 Plug 'img-paste-devs/img-paste.vim'
 Plug 'lervag/vimtex'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black'
 Plug 'preservim/vim-markdown'
-Plug 'rbgrouleff/bclose.vim'  " dependency of lf.vim
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
@@ -108,4 +107,6 @@ require'indentmini'.setup{}
 -- require'treesitter-context'.setup{}
 -- require('lspconfig').ruff_lsp.setup{}
 EOF
+
+nnoremap <leader>f :Lf<CR>
 
