@@ -1,0 +1,9 @@
+[user]
+	name = Rishabh Ranjan
+	email = rishabhranjan0207@gmail.com
+[push]
+	autoSetupRemote = True
+[credential "https://github.com"]
+	helper = ~/.pixi/envs/gh/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = ~/.pixi/envs/gh/bin/gh auth git-credential
