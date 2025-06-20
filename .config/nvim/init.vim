@@ -7,6 +7,7 @@ set clipboard=unnamedplus
 set linebreak
 set list
 set mouse=a
+set number
 set swapfile
 set undofile
 
@@ -27,26 +28,25 @@ if empty(glob(plug_path))
 endif
 
 call plug#begin()
-Plug 'elijahdanko/lf.vim'
+Plug 'yuzhegan/lf.vim'
 Plug 'farmergreg/vim-lastplace'
 Plug 'img-paste-devs/img-paste.vim'
 Plug 'lervag/vimtex'
 Plug 'nickeb96/fish.vim'
 Plug 'psf/black'
 Plug 'preservim/vim-markdown'
-Plug 'rbgrouleff/bclose.vim'  " dependency of lf.vim
 Plug 'tpope/vim-commentary'
 Plug 'vim-python/python-syntax'
 Plug 'webdevel/tabulous'
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim'
-" Plug 'lukas-reineke/indent-blankline.nvim'
 Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'neovim/nvim-lspconfig'
 Plug 'pechorin/any-jump.vim'
 Plug 'wellle/context.vim'
 Plug 'godlygeek/tabular'
+Plug 'nvimdev/indentmini.nvim'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -104,7 +104,10 @@ require'copilot'.setup{
 	  },
 }
 require'CopilotChat'.setup{}
+require'indentmini'.setup{}
 -- require'treesitter-context'.setup{}
 -- require('lspconfig').ruff_lsp.setup{}
 EOF
+
+nnoremap <leader>f :Lf<CR>
 

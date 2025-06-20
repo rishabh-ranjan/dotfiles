@@ -27,3 +27,5 @@ if status is-interactive
 
 	micromamba activate $MY_ENV
 end
+
+fish_add_path /afs/cs.stanford.edu/u/ranjanr/.modular/bin
