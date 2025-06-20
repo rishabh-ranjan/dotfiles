@@ -4,6 +4,6 @@
 [push]
 	autoSetupRemote = True
 [credential "https://github.com"]
-	helper = ~/.pixi/envs/gh/bin/gh auth git-credential
+	helper = !~/.pixi/envs/gh/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-	helper = ~/.pixi/envs/gh/bin/gh auth git-credential
+	helper = !~/.pixi/envs/gh/bin/gh auth git-credential
