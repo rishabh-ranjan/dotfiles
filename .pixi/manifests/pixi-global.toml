@@ -64,3 +64,8 @@ exposed = { tree = "tree" }
 channels = ["conda-forge"]
 dependencies = { the_silver_searcher = "*" }
 exposed = { ag = "ag" }
+
+[envs.gpustat]
+channels = ["conda-forge"]
+dependencies = { gpustat = "*" }
+exposed = { gpustat = "gpustat" }
