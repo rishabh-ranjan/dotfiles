@@ -3,6 +3,15 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
+if [[ $(hostname) == "ampere7.stanford.edu" ]]
+then
+	export PATH="/lfs/local/0/ranjanr/.pixi/bin:$PATH"
+	export HOME="/lfs/local/0/ranjanr"
+	export SHELL="/lfs/local/0/ranjanr/.pixi/bin/fish"
+	cd
+	exec $SHELL
+fi
+
 fish="$HOME/micromamba/envs/sw/bin/fish"
 if [ -x "$fish" ]
 then

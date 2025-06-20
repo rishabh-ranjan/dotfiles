@@ -1,0 +1,71 @@
+version = 1
+
+[envs.fish]
+channels = ["conda-forge"]
+dependencies = { fish = "*" }
+exposed = { fish = "fish", fish_indent = "fish_indent", fish_key_reader = "fish_key_reader" }
+
+[envs.nvim]
+channels = ["conda-forge"]
+dependencies = { nvim = "*" }
+exposed = { nvim = "nvim" }
+
+[envs.aria2]
+channels = ["conda-forge"]
+dependencies = { aria2 = "*" }
+exposed = { aria2c = "aria2c" }
+
+[envs.gh]
+channels = ["conda-forge"]
+dependencies = { gh = "*" }
+exposed = { gh = "gh" }
+
+[envs.git]
+channels = ["conda-forge"]
+dependencies = { git = "*" }
+exposed = { git = "git", git-cvsserver = "git-cvsserver", git-receive-pack = "git-receive-pack", git-shell = "git-shell", git-upload-archive = "git-upload-archive", git-upload-pack = "git-upload-pack", gitk = "gitk", scalar = "scalar" }
+
+[envs.grip]
+channels = ["conda-forge"]
+dependencies = { grip = "*" }
+exposed = { grip = "grip" }
+
+[envs.htop]
+channels = ["conda-forge"]
+dependencies = { htop = "*" }
+exposed = { htop = "htop" }
+
+[envs.ipython]
+channels = ["conda-forge"]
+dependencies = { ipython = "*" }
+exposed = { ipython = "ipython", ipython3 = "ipython3" }
+
+[envs.jless]
+channels = ["conda-forge"]
+dependencies = { jless = "*" }
+exposed = { jless = "jless" }
+
+[envs.nodejs]
+channels = ["conda-forge"]
+dependencies = { nodejs = "*" }
+exposed = { corepack = "corepack", node = "node", npm = "npm", npx = "npx" }
+
+[envs.tmux]
+channels = ["conda-forge"]
+dependencies = { tmux = "*" }
+exposed = { tmux = "tmux" }
+
+[envs.tree]
+channels = ["conda-forge"]
+dependencies = { tree = "*" }
+exposed = { tree = "tree" }
+
+[envs.the_silver_searcher]
+channels = ["conda-forge"]
+dependencies = { the_silver_searcher = "*" }
+exposed = { ag = "ag" }
+
+[envs.gpustat]
+channels = ["conda-forge"]
+dependencies = { gpustat = "*" }
+exposed = { gpustat = "gpustat" }
