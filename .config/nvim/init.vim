@@ -46,6 +46,7 @@ Plug 'stsewd/isort.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'neovim/nvim-lspconfig'
 Plug 'pechorin/any-jump.vim'
 Plug 'wellle/context.vim'
+Plug 'godlygeek/tabular'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
