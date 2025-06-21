@@ -11,4 +11,9 @@ fi
 
 export PATH="$HOME/.pixi/bin:$PATH"
 export SHELL="$HOME/.pixi/bin/fish"
-exec $SHELL
+if [[ -x $SHELL ]]
+then
+	exec $SHELL
+else
+	unset SHELL
+fi
