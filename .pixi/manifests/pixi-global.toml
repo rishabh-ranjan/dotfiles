@@ -69,3 +69,8 @@ exposed = { ag = "ag" }
 channels = ["conda-forge"]
 dependencies = { gpustat = "*" }
 exposed = { gpustat = "gpustat" }
+
+[envs.ruff]
+channels = ["conda-forge"]
+dependencies = { ruff = "*" }
+exposed = { ruff = "ruff" }
