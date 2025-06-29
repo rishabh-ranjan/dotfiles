@@ -3,7 +3,7 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-if [[ $(hostname) = *.stanford.edu ]]
+if [[ $(hostname) = ampere*.stanford.edu ]]
 then
 	export HOME="/lfs/local/0/ranjanr"
 	cd
