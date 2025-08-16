@@ -65,6 +65,11 @@ channels = ["conda-forge"]
 dependencies = { the_silver_searcher = "*" }
 exposed = { ag = "ag" }
 
+[envs.ruff]
+channels = ["conda-forge"]
+dependencies = { ruff = "*" }
+exposed = { ruff = "ruff" }
+
 [envs.gpustat]
 channels = ["conda-forge"]
 dependencies = { gpustat = "*" }
