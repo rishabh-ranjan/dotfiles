@@ -18,8 +18,8 @@ tide configure --auto --style=Lean --prompt_colors='True color' --show_time='12-
 ```
 
 ```bash
-mkdir .local/bin
-cd .local/bin
+mkdir -p ~/.local/bin
+cd ~/.local/bin
 aria2c https://github.com/gokcehan/lf/releases/download/r36/lf-linux-amd64.tar.gz
 tar -xzf lf-linux-amd64.tar.gz
 rm lf-linux-amd64.tar.gz
