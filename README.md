@@ -23,5 +23,5 @@ cd ~/.local/bin
 aria2c https://github.com/gokcehan/lf/releases/download/r36/lf-linux-amd64.tar.gz
 tar -xzf lf-linux-amd64.tar.gz
 rm lf-linux-amd64.tar.gz
-cd
+cd -
 ```
