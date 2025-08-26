@@ -47,6 +47,8 @@ Plug 'pechorin/any-jump.vim'
 Plug 'wellle/context.vim'
 Plug 'godlygeek/tabular'
 Plug 'nvimdev/indentmini.nvim'
+Plug 'jpalardy/vim-slime'
+Plug 'klafyvel/vim-slime-cells'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -59,6 +61,12 @@ let g:tex_flavor = 'latex'
 let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_math = 1
 let g:lf_change_cwd = 1
+let g:slime_target = 'tmux'
+let g:slime_default_config = {'socket_name': get(split($TMUX, ','), 0), 'target_pane': ':.1'}
+let g:slime_dont_ask_default = 1
+let g:slime_bracketed_paste = 1
+let g:slime_cell_delimiter = "^\\s*# %%"
+
 
 augroup noindent
 	autocmd!
@@ -102,13 +110,16 @@ require'copilot'.setup{
 	    svn = false,
 	    cvs = false,
 	    ["."] = true,
-	  },
+	},
 }
 require'CopilotChat'.setup{}
 require'indentmini'.setup{}
--- require'treesitter-context'.setup{}
--- require('lspconfig').ruff_lsp.setup{}
 EOF
 
 nnoremap <leader>f :Lf<CR>
+
+nmap <leader>cx <plug>SlimeSendCell
+nmap <leader>cc <plug>SlimeCellsSendAndGoToNext
+nmap <leader>cj <plug>SlimeCellsNext
+nmap <leader>ck <plug>SlimeCellsPrev
 
