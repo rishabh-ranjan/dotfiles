@@ -73,10 +73,10 @@ augroup noindent
 	autocmd FileType plaintex,tex,latex,html setlocal indentexpr=
 augroup end
 
-" augroup cc_for_py
-" 	autocmd!
-" 	autocmd FileType python setlocal colorcolumn=88
-" augroup end
+augroup cc
+	autocmd!
+	autocmd FileType rust setlocal colorcolumn=100
+augroup end
 
 augroup black_on_save
 	autocmd!
@@ -101,15 +101,15 @@ require'copilot'.setup{
 		auto_trigger = true,
 	},
 	filetypes = {
-	    yaml = true,
-	    markdown = true,
-	    help = false,
-	    gitcommit = false,
-	    gitrebase = false,
-	    hgcommit = false,
-	    svn = false,
-	    cvs = false,
-	    ["."] = true,
+		yaml = true,
+		markdown = true,
+		help = false,
+		gitcommit = false,
+		gitrebase = false,
+		hgcommit = false,
+		svn = false,
+		cvs = false,
+		["."] = true,
 	},
 }
 require'CopilotChat'.setup{}
