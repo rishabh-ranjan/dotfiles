@@ -28,7 +28,6 @@ if empty(glob(plug_path))
 endif
 
 call plug#begin()
-Plug 'yuzhegan/lf.vim'
 Plug 'farmergreg/vim-lastplace'
 Plug 'img-paste-devs/img-paste.vim'
 Plug 'lervag/vimtex'
@@ -49,6 +48,7 @@ Plug 'godlygeek/tabular'
 Plug 'nvimdev/indentmini.nvim'
 Plug 'jpalardy/vim-slime'
 Plug 'klafyvel/vim-slime-cells'
+Plug 'rishabh-ranjan/lf.vim'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -122,4 +122,6 @@ nmap <leader>cx <plug>SlimeSendCell
 nmap <leader>cc <plug>SlimeCellsSendAndGoToNext
 nmap <leader>cj <plug>SlimeCellsNext
 nmap <leader>ck <plug>SlimeCellsPrev
+
+highlight Visual guibg=DarkGrey
 
