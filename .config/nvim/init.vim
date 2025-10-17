@@ -28,7 +28,6 @@ if empty(glob(plug_path))
 endif
 
 call plug#begin()
-Plug 'yuzhegan/lf.vim'
 Plug 'farmergreg/vim-lastplace'
 Plug 'img-paste-devs/img-paste.vim'
 Plug 'lervag/vimtex'
@@ -49,6 +48,7 @@ Plug 'godlygeek/tabular'
 Plug 'nvimdev/indentmini.nvim'
 Plug 'jpalardy/vim-slime'
 Plug 'klafyvel/vim-slime-cells'
+Plug 'rishabh-ranjan/lf.vim'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
@@ -73,10 +73,10 @@ augroup noindent
 	autocmd FileType plaintex,tex,latex,html setlocal indentexpr=
 augroup end
 
-" augroup cc_for_py
-" 	autocmd!
-" 	autocmd FileType python setlocal colorcolumn=88
-" augroup end
+augroup cc
+	autocmd!
+	autocmd FileType rust setlocal colorcolumn=100
+augroup end
 
 augroup black_on_save
 	autocmd!
@@ -101,15 +101,15 @@ require'copilot'.setup{
 		auto_trigger = true,
 	},
 	filetypes = {
-	    yaml = true,
-	    markdown = true,
-	    help = false,
-	    gitcommit = false,
-	    gitrebase = false,
-	    hgcommit = false,
-	    svn = false,
-	    cvs = false,
-	    ["."] = true,
+		yaml = true,
+		markdown = true,
+		help = false,
+		gitcommit = false,
+		gitrebase = false,
+		hgcommit = false,
+		svn = false,
+		cvs = false,
+		["."] = true,
 	},
 }
 require'CopilotChat'.setup{}
@@ -122,4 +122,6 @@ nmap <leader>cx <plug>SlimeSendCell
 nmap <leader>cc <plug>SlimeCellsSendAndGoToNext
 nmap <leader>cj <plug>SlimeCellsNext
 nmap <leader>ck <plug>SlimeCellsPrev
+
+highlight Visual guibg=DarkGrey
 
