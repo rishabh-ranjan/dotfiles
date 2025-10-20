@@ -25,11 +25,6 @@ channels = ["conda-forge"]
 dependencies = { git = "*" }
 exposed = { git = "git", git-cvsserver = "git-cvsserver", git-receive-pack = "git-receive-pack", git-shell = "git-shell", git-upload-archive = "git-upload-archive", git-upload-pack = "git-upload-pack", gitk = "gitk", scalar = "scalar" }
 
-[envs.grip]
-channels = ["conda-forge"]
-dependencies = { grip = "*" }
-exposed = { grip = "grip" }
-
 [envs.htop]
 channels = ["conda-forge"]
 dependencies = { htop = "*" }
@@ -74,3 +69,13 @@ exposed = { ruff = "ruff" }
 channels = ["conda-forge"]
 dependencies = { gpustat = "*" }
 exposed = { gpustat = "gpustat" }
+
+[envs.ripgrep]
+channels = ["conda-forge"]
+dependencies = { ripgrep = "*" }
+exposed = { rg = "rg" }
+
+[envs.grip]
+channels = ["conda-forge"]
+dependencies = { grip = "*" }
+exposed = { grip = "grip" }
