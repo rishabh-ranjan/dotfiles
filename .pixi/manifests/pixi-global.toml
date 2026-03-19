@@ -79,3 +79,8 @@ exposed = { rg = "rg" }
 channels = ["conda-forge"]
 dependencies = { grip = "*" }
 exposed = { grip = "grip" }
+
+[envs.smem]
+channels = ["conda-forge"]
+dependencies = { smem = "*" }
+exposed = { smem = "smem", smemcap = "smemcap" }
