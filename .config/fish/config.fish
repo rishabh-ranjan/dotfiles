@@ -19,6 +19,4 @@ if status is-interactive
 	set -x WANDB_CONSOLE "off"
 
 	set -x PYTHONPATH "$HOME/.config/python"
-
-	set -x CLAUDE_CONFIG_DIR "/dfs/user/ranjanr/.claude"
 end
