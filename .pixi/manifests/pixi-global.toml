@@ -84,3 +84,8 @@ exposed = { grip = "grip" }
 channels = ["conda-forge"]
 dependencies = { smem = "*" }
 exposed = { smem = "smem", smemcap = "smemcap" }
+
+[envs.inotify-tools]
+channels = ["conda-forge"]
+dependencies = { inotify-tools = "*" }
+exposed = { inotifywait = "inotifywait", inotifywatch = "inotifywatch" }
