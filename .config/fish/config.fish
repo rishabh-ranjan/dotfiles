@@ -20,8 +20,7 @@ if status is-interactive
 
 	set -x PYTHONPATH "$HOME/.config/python"
 
-	# Source secrets file (not in dotfiles repo)
-	if test -f ~/.config/fish/secrets.fish
-		source ~/.config/fish/secrets.fish
+	if string match -q '*.stanford.edu' (hostname)
+		set -x CLAUDE_CONFIG_DIR /dfs/user/ranjanr/.claude
 	end
 end

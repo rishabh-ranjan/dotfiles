@@ -28,4 +28,6 @@ aria2c https://github.com/gokcehan/lf/releases/download/r36/lf-linux-amd64.tar.g
 tar -xzf lf-linux-amd64.tar.gz
 rm lf-linux-amd64.tar.gz
 cd -
+
+curl -fsSL https://claude.ai/install.sh | bash
 ```

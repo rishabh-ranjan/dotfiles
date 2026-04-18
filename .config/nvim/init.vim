@@ -49,6 +49,7 @@ Plug 'nvimdev/indentmini.nvim'
 Plug 'jpalardy/vim-slime'
 Plug 'klafyvel/vim-slime-cells'
 Plug 'rishabh-ranjan/lf.vim'
+Plug 'tpope/vim-fugitive'
 call plug#end()
 
 let g:isort_command = 'isort --profile black'
