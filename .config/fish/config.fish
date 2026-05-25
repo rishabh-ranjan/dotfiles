@@ -20,7 +20,7 @@ if status is-interactive
 
 	set -x PYTHONPATH "$HOME/.config/python"
 
-	if string match -q '*.stanford.edu' (hostname)
+	if string match -q 'ampere*.stanford.edu' (hostname)
 		set -x CLAUDE_CONFIG_DIR /dfs/user/ranjanr/.claude
 	end
 end
