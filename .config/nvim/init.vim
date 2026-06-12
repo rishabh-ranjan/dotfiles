@@ -126,3 +126,6 @@ nmap <leader>ck <plug>SlimeCellsPrev
 
 highlight Visual guibg=DarkGrey
 
+
+" Alt+Backspace deletes previous word in insert mode
+inoremap <M-BS> <C-W>
