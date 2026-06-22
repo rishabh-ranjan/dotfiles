@@ -73,3 +73,27 @@ all jobs relevant to the current session.
 Ensure medium- to long- running jobs are pre-emptible.
 
 ## Debugging/development runs on ILC
+
+Debug iterations fail often; don't re-queue each attempt.
+Allocate the node once, run each attempt as an instant job step.
+
+Pick the interactive QoS (highest priority, short wall) for this —
+discover its exact name/limits via the commands above.
+
+Hold the node with a sleeping batch job (once per session):
+```bash
+ssh ilc "sbatch --account=<acct> --partition=<part> --qos=<interactive-qos> \
+  --gres=gpu:<type>:1 --cpus-per-task=8 --mem=100G --time=08:00:00 \
+  -J debughold --wrap='sleep infinity'"   # note the JOBID
+```
+
+Fire each attempt as an overlapping step (starts in <1s, warm venv):
+```bash
+ssh ilc "srun --jobid=<JOBID> --overlap \
+  bash -c 'cd /sailhome/\$USER/proj && uv run --no-progress python train.py'"
+```
+
+`--overlap` lets steps share the held GPU.
+`scancel <JOBID>` when done — the hold burns time budget while idle,
+so size `--time` to the session and release it promptly.
+Once debugged, submit the real run as a pre-emptible production job.
