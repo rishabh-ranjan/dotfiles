@@ -82,18 +82,19 @@ discover its exact name/limits via the commands above.
 
 Hold the node with a sleeping batch job (once per session):
 ```bash
-ssh ilc "sbatch --account=<acct> --partition=<part> --qos=<interactive-qos> \
+sbatch --account=<acct> --partition=<part> --qos=<interactive-qos> \
   --gres=gpu:<type>:1 --cpus-per-task=8 --mem=100G --time=08:00:00 \
-  -J debughold --wrap='sleep infinity'"   # note the JOBID
+  -J debughold --wrap='sleep infinity'   # note the JOBID
 ```
 
-Fire each attempt as an overlapping step (starts in <1s, warm venv):
+Fire each attempt as an overlapping step (starts in under 1s, warm venv):
 ```bash
-ssh ilc "srun --jobid=<JOBID> --overlap \
-  bash -c 'cd /sailhome/\$USER/proj && uv run --no-progress python train.py'"
+srun --jobid=<JOBID> --overlap ...
 ```
 
 `--overlap` lets steps share the held GPU.
 `scancel <JOBID>` when done — the hold burns time budget while idle,
 so size `--time` to the session and release it promptly.
 Once debugged, submit the real run as a pre-emptible production job.
+
+
