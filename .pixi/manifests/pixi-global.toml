@@ -99,3 +99,8 @@ exposed = { idle3 = "idle3", "idle3.14" = "idle3.14", pydoc = "pydoc", pydoc3 = 
 channels = ["conda-forge"]
 dependencies = { huggingface_hub = "*" }
 exposed = { huggingface-cli = "huggingface-cli", hf = "hf", tiny-agents = "tiny-agents" }
+
+[envs.lf]
+channels = ["conda-forge"]
+dependencies = { lf = "*" }
+exposed = { lf = "lf" }
