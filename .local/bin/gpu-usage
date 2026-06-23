@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# gpu-usage — visual summary of GPU usage on the ILC SLURM cluster.
+# Shows, per node, how many GPUs are busy/free (with the users holding them),
+# plus a per-GPU-type summary of used vs free.
+set -euo pipefail
+
+if ! command -v sinfo >/dev/null 2>&1; then
+    echo "error: SLURM (sinfo) not found in PATH" >&2
+    exit 1
+fi
+
+# Colors (disabled if not a tty)
+if [[ -t 1 ]]; then
+    R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; B=$'\e[34m'; DIM=$'\e[2m'; BOLD=$'\e[1m'; N=$'\e[0m'
+else
+    R=; G=; Y=; B=; DIM=; BOLD=; N=
+fi
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+# --- node capacity: node|type|total ------------------------------------------
+# sinfo emits one line per node/partition; dedupe by node name.
+sinfo -N -h -o "%N|%G" | sort -u | while IFS='|' read -r node gres; do
+    [[ "$gres" == "(null)" || -z "$gres" ]] && continue
+    # gres like: gpu:a100:8  (may carry (S:..) suffixes or comma lists)
+    echo "$gres" | tr ',' '\n' | while read -r g; do
+        [[ "$g" == gpu:* ]] || continue
+        gtype=$(echo "$g" | cut -d: -f2)
+        gcnt=$(echo "$g" | cut -d: -f3 | sed 's/(.*//')
+        [[ "$gcnt" =~ ^[0-9]+$ ]] || gcnt=0
+        echo "$node|$gtype|$gcnt"
+    done
+done | sort -u > "$tmp/cap"
+
+# --- usage: node|user|gpus_used ----------------------------------------------
+squeue -h -t R -O "UserName:|,NumNodes:|,NodeList:|,tres-alloc:|" | \
+while IFS='|' read -r user nnodes nodelist tres _; do
+    user=$(echo "$user" | xargs)
+    nnodes=$(echo "$nnodes" | xargs)
+    nodelist=$(echo "$nodelist" | xargs)
+    [[ -z "$nodelist" ]] && continue
+    # total gpus for this job
+    gpu=$(echo "$tres" | grep -oE 'gres/gpu=[0-9]+' | head -1 | cut -d= -f2 || true)
+    [[ "$gpu" =~ ^[0-9]+$ ]] || gpu=0
+    [[ "$gpu" -eq 0 ]] && continue
+    [[ "$nnodes" =~ ^[0-9]+$ ]] || nnodes=1
+    per=$(( gpu / nnodes )); (( per < 1 )) && per=1
+    for nd in $(scontrol show hostnames "$nodelist"); do
+        echo "$nd|$user|$per"
+    done
+done > "$tmp/use"
+
+# --- render ------------------------------------------------------------------
+awk -F'|' -v R="$R" -v G="$G" -v Y="$Y" -v B="$B" -v DIM="$DIM" -v BOLD="$BOLD" -v N="$N" '
+function bar(used, total,   i, s) {
+    s=""
+    for (i=0; i<total; i++) s = s ((i<used) ? R"\xe2\x96\xa0" : G"\xe2\x96\xa1")
+    return s N
+}
+FNR==NR {
+    cap[$1]=$3; type[$1]=$2; order[$1]=1
+    next
+}
+{
+    used[$1] += $3
+    if (users[$1]=="") users[$1]=$2":"$3
+    else {
+        # merge multiple allocations by same user on a node
+        if (index(users[$1], $2":")) {
+            n=split(users[$1], a, " ")
+            users[$1]=""
+            for (i=1;i<=n;i++){ split(a[i],kv,":"); if(kv[1]==$2) kv[2]+=$3; users[$1]=users[$1] (users[$1]==""?"":" ") kv[1]":"kv[2] }
+        } else users[$1]=users[$1]" "$2":"$3
+    }
+}
+END {
+    # group nodes by type
+    ntypes=0
+    for (nd in cap) {
+        t=type[nd]
+        if (!(t in seen)) { seen[t]=1; tlist[++ntypes]=t }
+    }
+    # sort types alphabetically
+    for (i=1;i<=ntypes;i++) for (j=i+1;j<=ntypes;j++) if (tlist[j]<tlist[i]){tmp=tlist[i];tlist[i]=tlist[j];tlist[j]=tmp}
+
+    printf "\n%sGPU usage — ILC cluster%s\n\n", BOLD, N
+    for (i=1;i<=ntypes;i++) {
+        t=tlist[i]
+        # collect & sort nodes of this type
+        nn=0
+        for (nd in cap) if (type[nd]==t) nlist[++nn]=nd
+        for (a=1;a<=nn;a++) for (b=a+1;b<=nn;b++) if (nlist[b]<nlist[a]){tmp=nlist[a];nlist[a]=nlist[b];nlist[b]=tmp}
+
+        tused=0; ttot=0
+        printf "%s%-8s%s\n", B, t, N
+        for (a=1;a<=nn;a++) {
+            nd=nlist[a]; u=used[nd]+0; c=cap[nd]+0
+            if (u>c) u=c
+            tused+=u; ttot+=c
+            ulist = (users[nd]=="") ? DIM"—"N : users[nd]
+            printf "  %-14s %s %s%d/%d%s  %s\n", nd, bar(u,c), (u==c?Y:""), u, c, N, ulist
+        }
+        sumu[t]=tused; sumt[t]=ttot
+        printf "\n"
+        delete nlist
+    }
+
+    printf "%sSummary%s\n", BOLD, N
+    gtot=0; gused=0
+    for (i=1;i<=ntypes;i++){
+        t=tlist[i]; fu=sumt[t]-sumu[t]
+        printf "  %s%-8s%s  %sused %2d%s / %d   %sfree %2d%s\n", B,t,N, R,sumu[t],N, sumt[t], G,fu,N
+        gtot+=sumt[t]; gused+=sumu[t]
+    }
+    printf "  %s%-8s%s  %sused %2d%s / %d   %sfree %2d%s\n", BOLD,"TOTAL",N, R,gused,N, gtot, G,gtot-gused,N
+    printf "\n"
+}
+' "$tmp/cap" "$tmp/use"
