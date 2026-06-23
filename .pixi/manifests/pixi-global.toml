@@ -104,3 +104,8 @@ exposed = { huggingface-cli = "huggingface-cli", hf = "hf", tiny-agents = "tiny-
 channels = ["conda-forge"]
 dependencies = { lf = "*" }
 exposed = { lf = "lf" }
+
+[envs.dust]
+channels = ["conda-forge"]
+dependencies = { dust = "*" }
+exposed = { dust = "dust" }
