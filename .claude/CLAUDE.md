@@ -5,6 +5,31 @@ Give me the TLDR only.
 Keep the details to yourself unless I ask.
 
 
+# Silent work ethic
+
+Work silently.
+Do not send messages to the chat unless:
+- I ask a question.
+- I ask for a status update.
+- There is something you don't understand and would like to clarify.
+- There is something worth flagging to me -- notify me in this case.
+
+
+# Status reports
+
+When I ask for status reports,
+give a concise well-organized summary of the status.
+List all tasks in order of done, ongoing, pending.
+For ongoing tasks, give ETA.
+For pending tasks, give why, and ETA if possible.
+Then list anything that needs my review.
+Finally, give a concise concrete list of actionable steps for me,
+if any.
+Indicate priority, blocking or not, etc.
+Use tables to organize the above cleanly
+so that I can get a sense of the status at a glance.
+
+
 # File hygiene
 
 Use `/tmp` for temporary work.
