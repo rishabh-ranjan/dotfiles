@@ -150,12 +150,12 @@ END {
         t=tlist[i]
         nn=0
         for (nd in cap) if (type[nd]==t) nlist[++nn]=nd
-        for (a=1;a<=nn;a++) for (b=a+1;b<=nn;b++) if (nlist[b]<nlist[a]){tmp=nlist[a];nlist[a]=nlist[b];nlist[b]=tmp}
+        for (ai=1;ai<=nn;ai++) for (bi=ai+1;bi<=nn;bi++) if (nlist[bi]<nlist[ai]){tmp=nlist[ai];nlist[ai]=nlist[bi];nlist[bi]=tmp}
 
         tused=0; ttot=0
         printf "%s%-8s%s\n", B, t, N
-        for (a=1;a<=nn;a++) {
-            nd=nlist[a]; u=used[nd]+0; c=cap[nd]+0; m=mine[nd]+0
+        for (ai=1;ai<=nn;ai++) {
+            nd=nlist[ai]; u=used[nd]+0; c=cap[nd]+0; m=mine[nd]+0
             if (u>c) u=c
             if (m>u) m=u
             tused+=u; ttot+=c
