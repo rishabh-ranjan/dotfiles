@@ -52,10 +52,15 @@ while IFS='|' read -r user nnodes nodelist tres _; do
 done > "$tmp/use"
 
 # --- render ------------------------------------------------------------------
-awk -F'|' -v R="$R" -v G="$G" -v Y="$Y" -v B="$B" -v DIM="$DIM" -v BOLD="$BOLD" -v N="$N" '
-function bar(used, total,   i, s) {
+awk -F'|' -v R="$R" -v G="$G" -v Y="$Y" -v B="$B" -v DIM="$DIM" -v BOLD="$BOLD" -v N="$N" -v ME="$USER" '
+function bar(used, mine, total,   i, s) {
+    # mine (this user) -> green filled; other users -> red filled; free -> dim empty
     s=""
-    for (i=0; i<total; i++) s = s ((i<used) ? R"\xe2\x96\xa0" : G"\xe2\x96\xa1")
+    for (i=0; i<total; i++) {
+        if (i<mine)      s = s G"\xe2\x96\xa0"
+        else if (i<used) s = s R"\xe2\x96\xa0"
+        else             s = s DIM"\xe2\x96\xa1"
+    }
     return s N
 }
 FNR==NR {
@@ -64,6 +69,7 @@ FNR==NR {
 }
 {
     used[$1] += $3
+    if ($2==ME) mine[$1] += $3
     if (users[$1]=="") users[$1]=$2":"$3
     else {
         # merge multiple allocations by same user on a node
@@ -95,11 +101,12 @@ END {
         tused=0; ttot=0
         printf "%s%-8s%s\n", B, t, N
         for (a=1;a<=nn;a++) {
-            nd=nlist[a]; u=used[nd]+0; c=cap[nd]+0
+            nd=nlist[a]; u=used[nd]+0; c=cap[nd]+0; m=mine[nd]+0
             if (u>c) u=c
+            if (m>u) m=u
             tused+=u; ttot+=c
             ulist = (users[nd]=="") ? DIM"—"N : users[nd]
-            printf "  %-14s %s %s%d/%d%s  %s\n", nd, bar(u,c), (u==c?Y:""), u, c, N, ulist
+            printf "  %-14s %s %s%d/%d%s  %s\n", nd, bar(u,m,c), (u==c?Y:""), u, c, N, ulist
         }
         sumu[t]=tused; sumt[t]=ttot
         printf "\n"
