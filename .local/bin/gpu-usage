@@ -41,19 +41,22 @@ sinfo -N -h -o "%N|%G" | sort -u | while IFS='|' read -r node gres; do
     echo "$gres" | tr ',' '\n' | while read -r g; do
         [[ "$g" == gpu:* ]] || continue
         gtype=$(echo "$g" | cut -d: -f2)
+        [[ "$gtype" == a100* ]] || continue
         gcnt=$(echo "$g" | cut -d: -f3 | sed 's/(.*//')
         [[ "$gcnt" =~ ^[0-9]+$ ]] || gcnt=0
         echo "$node|$gtype|$gcnt"
     done
 done | sort -u > "$tmp/cap"
 
-# --- usage: node|user|gpus_used ----------------------------------------------
-squeue -h -t R -O "UserName:|,NumNodes:|,NodeList:|,tres-alloc:|" | \
-while IFS='|' read -r user nnodes nodelist tres _; do
+# --- usage: node|user|jobname|gpus_used --------------------------------------
+squeue -h -t R -O "UserName:|,Name:|,NumNodes:|,NodeList:|,tres-alloc:|" | \
+while IFS='|' read -r user jobname nnodes nodelist tres _; do
     user=$(echo "$user" | xargs)
+    jobname=$(echo "$jobname" | xargs)
     nnodes=$(echo "$nnodes" | xargs)
     nodelist=$(echo "$nodelist" | xargs)
     [[ -z "$nodelist" ]] && continue
+    [[ -z "$jobname" ]] && jobname="?"
     # total gpus for this job
     gpu=$(echo "$tres" | grep -oE 'gres/gpu=[0-9]+' | head -1 | cut -d= -f2 || true)
     [[ "$gpu" =~ ^[0-9]+$ ]] || gpu=0
@@ -61,7 +64,7 @@ while IFS='|' read -r user nnodes nodelist tres _; do
     [[ "$nnodes" =~ ^[0-9]+$ ]] || nnodes=1
     per=$(( gpu / nnodes )); (( per < 1 )) && per=1
     for nd in $(scontrol show hostnames "$nodelist"); do
-        echo "$nd|$user|$per"
+        echo "$nd|$user|$jobname|$per"
     done
 done > "$tmp/use"
 
@@ -71,9 +74,10 @@ done > "$tmp/use"
 : > "$tmp/stats"
 # Read into a file first: a `squeue | while` pipe would run the loop in a
 # subshell, so the backgrounded sruns would be orphaned from the outer `wait`.
-squeue -h -u "$USER" -t R -O "JobID:|,NodeList:|,tres-alloc:|" > "$tmp/myjobs"
-while IFS='|' read -r jid nodelist tres _; do
+squeue -h -u "$USER" -t R -O "JobID:|,Name:|,NodeList:|,tres-alloc:|" > "$tmp/myjobs"
+while IFS='|' read -r jid jobname nodelist tres _; do
     jid=$(echo "$jid" | xargs)
+    jobname=$(echo "$jobname" | xargs)
     nodelist=$(echo "$nodelist" | xargs)
     echo "$tres" | grep -qE 'gres/gpu=[1-9]' || continue
     for nd in $(scontrol show hostnames "$nodelist"); do
@@ -81,8 +85,8 @@ while IFS='|' read -r jid nodelist tres _; do
             nosched timeout 25 srun --jobid="$jid" --overlap -w "$nd" --ntasks=1 \
                 nvidia-smi --query-gpu=index,power.draw,utilization.gpu,memory.used,memory.total \
                 --format=csv,noheader,nounits </dev/null 2>/dev/null \
-            | awk -v nd="$nd" -F', *' 'NF>=5 && $1 ~ /^[0-9]+$/ {
-                  print nd"|"$1"|"$2"|"$3"|"$4"|"$5 }' \
+            | awk -v nd="$nd" -v jn="$jobname" -F', *' 'NF>=5 && $1 ~ /^[0-9]+$/ {
+                  print jn"|"nd"|"$1"|"$2"|"$3"|"$4"|"$5 }' \
             > "$tmp/stats.$jid.$nd" 2>/dev/null || true
         ) &
     done
@@ -116,80 +120,51 @@ FILENAME==capf {
     next
 }
 FILENAME==usef {
-    used[$1] += $3
-    if ($2==ME) mine[$1] += $3
-    if (users[$1]=="") users[$1]=$2":"$3
-    else {
-        if (index(users[$1], $2":")) {
-            n=split(users[$1], a, " ")
-            users[$1]=""
-            for (i=1;i<=n;i++){ split(a[i],kv,":"); if(kv[1]==$2) kv[2]+=$3; users[$1]=users[$1] (users[$1]==""?"":" ") kv[1]":"kv[2] }
-        } else users[$1]=users[$1]" "$2":"$3
-    }
+    used[$1] += $4
+    if ($2==ME) mine[$1] += $4
     next
 }
 FILENAME==statf {
-    # node|idx|power|util|mem_used|mem_total
-    nd=$1; idx=$2
-    key=nd SUBSEP idx
-    gpow[key]=$3; gutil[key]=$4; gmu[key]=$5; gmt[key]=$6
-    if (idx+1 > gn[nd]) gn[nd]=idx+1
-    haveStats[nd]=1
+    # jobname|node|idx|power|util|mem_used|mem_total
+    jn=$1; nd=$2; idx=$3
+    r=++nstat
+    sjob[r]=jn; snd[r]=nd; sidx[r]=idx
+    spow[r]=$4; sutil[r]=$5; smu[r]=$6; smt[r]=$7
     next
 }
 END {
-    ntypes=0
-    for (nd in cap) {
-        t=type[nd]
-        if (!(t in seen)) { seen[t]=1; tlist[++ntypes]=t }
+    # ---- per-node summary: free / mine / other -----------------------------
+    nn=0
+    for (nd in cap) nlist[++nn]=nd
+    for (ai=1;ai<=nn;ai++) for (bi=ai+1;bi<=nn;bi++) if (nlist[bi]<nlist[ai]){t=nlist[ai];nlist[ai]=nlist[bi];nlist[bi]=t}
+
+    printf "\n%sGPU usage — ILC a100%s\n\n", BOLD, N
+    for (ai=1;ai<=nn;ai++) {
+        nd=nlist[ai]; u=used[nd]+0; c=cap[nd]+0; m=mine[nd]+0
+        if (u>c) u=c; if (m>u) m=u
+        oth=u-m; fr=c-u
+        printf "  %-9s %s  %sfree %d%s  %smine %d%s  %sother %d%s\n", nd, bar(u,m,c), \
+            G, fr, N, (m>0?G:DIM), m, N, (oth>0?R:DIM), oth, N
     }
-    for (i=1;i<=ntypes;i++) for (j=i+1;j<=ntypes;j++) if (tlist[j]<tlist[i]){tmp=tlist[i];tlist[i]=tlist[j];tlist[j]=tmp}
 
-    printf "\n%sGPU usage — ILC cluster%s\n\n", BOLD, N
-    for (i=1;i<=ntypes;i++) {
-        t=tlist[i]
-        nn=0
-        for (nd in cap) if (type[nd]==t) nlist[++nn]=nd
-        for (ai=1;ai<=nn;ai++) for (bi=ai+1;bi<=nn;bi++) if (nlist[bi]<nlist[ai]){tmp=nlist[ai];nlist[ai]=nlist[bi];nlist[bi]=tmp}
-
-        tused=0; ttot=0
-        printf "%s%-8s%s\n", B, t, N
-        for (ai=1;ai<=nn;ai++) {
-            nd=nlist[ai]; u=used[nd]+0; c=cap[nd]+0; m=mine[nd]+0
-            if (u>c) u=c
-            if (m>u) m=u
-            tused+=u; ttot+=c
-            ulist = (users[nd]=="") ? DIM"—"N : users[nd]
-            printf "  %-14s %s %s%d/%d%s  %s\n", nd, bar(u,m,c), (u==c?Y:""), u, c, N, ulist
-            # live per-GPU detail for nodes where I have stats
-            if (haveStats[nd]) {
-                for (k=0;k<gn[nd];k++) {
-                    key=nd SUBSEP k
-                    if (!(key in gutil)) continue
-                    ut=gutil[key]+0; po=gpow[key]+0
-                    mu=gmu[key]+0; mt=gmt[key]+0
-                    mpct=(mt>0?mu*100/mt:0)
-                    printf "      %sgpu%d%s  util %s %s%3d%%%s   mem %s %s%4.1f/%.0fG%s   %s%3.0fW%s\n", \
-                        DIM, k, N, \
-                        meter(ut, hcol(ut), 8), hcol(ut), ut, N, \
-                        meter(mpct, hcol(mpct), 8), hcol(mpct), mu/1024, mt/1024, N, \
-                        C, po, N
-                }
-            }
+    # ---- my jobs: per-GPU live stats, grouped by job name ------------------
+    njob=0
+    for (r=1;r<=nstat;r++) if (!(sjob[r] in jseen)) { jseen[sjob[r]]=1; jlist[++njob]=sjob[r] }
+    if (njob>0) printf "\n"
+    for (ji=1;ji<=njob;ji++) {
+        jn=jlist[ji]
+        printf "  %s%s%s\n", BOLD, jn, N
+        for (r=1;r<=nstat;r++) {
+            if (sjob[r]!=jn) continue
+            ut=sutil[r]+0; po=spow[r]+0; mu=smu[r]+0; mt=smt[r]+0
+            mpct=(mt>0?mu*100/mt:0)
+            printf "    %s%s:%d%s  util %s %s%3d%%%s  mem %s %s%4.1f/%.0fG%s  %s%3.0fW%s\n", \
+                DIM, snd[r], sidx[r], N, \
+                meter(ut, hcol(ut), 8), hcol(ut), ut, N, \
+                meter(mpct, hcol(mpct), 8), hcol(mpct), mu/1024, mt/1024, N, \
+                C, po, N
         }
-        sumu[t]=tused; sumt[t]=ttot
-        printf "\n"
-        delete nlist
     }
-
-    printf "%sSummary%s\n", BOLD, N
-    gtot=0; gused=0
-    for (i=1;i<=ntypes;i++){
-        t=tlist[i]; fu=sumt[t]-sumu[t]
-        printf "  %s%-8s%s  %sused %2d%s / %d   %sfree %2d%s\n", B,t,N, R,sumu[t],N, sumt[t], G,fu,N
-        gtot+=sumt[t]; gused+=sumu[t]
-    }
-    printf "  %s%-8s%s  %sused %2d%s / %d   %sfree %2d%s\n", BOLD,"TOTAL",N, R,gused,N, gtot, G,gtot-gused,N
     printf "\n"
 }
 ' capf="$tmp/cap" usef="$tmp/use" statf="$tmp/stats" "$tmp/cap" "$tmp/use" "$tmp/stats"
