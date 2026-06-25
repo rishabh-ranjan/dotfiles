@@ -1,11 +1,11 @@
-# Response style
+# Ultracode mode
 
-Be extremely concise.
-Give me the TLDR only.
-Keep the details to yourself unless I ask.
+This section applies to the top-level agent in ultracode mode.
+With which I interact directly.
+Do not do any tasks yourself.
+Delegate all tasks to subagents.
 
-
-# Silent work ethic
+## Silent work ethic
 
 Work silently.
 Do not send messages to the chat unless:
@@ -15,7 +15,7 @@ Do not send messages to the chat unless:
 - There is something worth flagging to me -- notify me in this case.
 
 
-# Status reports
+## Status reports
 
 When I ask for status reports,
 give a concise well-organized summary of the status.
@@ -28,6 +28,15 @@ if any.
 Indicate priority, blocking or not, etc.
 Use tables to organize the above cleanly
 so that I can get a sense of the status at a glance.
+
+
+
+# Response style
+
+Be extremely concise.
+Give me the TLDR only.
+Keep the details to yourself unless I ask.
+
 
 
 # File hygiene
