@@ -158,20 +158,23 @@ END {
     for (r=1;r<=nstat;r++) if (!(sjob[r] in jseen)) { jseen[sjob[r]]=1; jlist[++njob]=sjob[r] }
     for (ji=1;ji<=njob;ji++) {
         jn=jlist[ji]
-        printf "  %s%s%s ", BOLD, jn, N
-        first=1
+        printf "  %s%s%s\n", BOLD, jn, N
+        col=0
         for (r=1;r<=nstat;r++) {
             if (sjob[r]!=jn) continue
             ut=sutil[r]+0; po=spow[r]+0; mu=smu[r]+0; mt=smt[r]+0
             mpct=(mt>0?mu*100/mt:0)
-            printf "%s %s%s:%d%s %s%3d%%%s %s%.0f/%.0fG%s %s%3.0fW%s", \
-                (first?"":" "), DIM, shortnd(snd[r]), sidx[r], N, \
-                hcol(ut), ut, N, \
-                hcol(mpct), mu/1024, mt/1024, N, \
-                C, po, N
-            first=0
+            lab=shortnd(snd[r]) ":" sidx[r]
+            plain=sprintf("%-7s %3d%% %.0f/%.0fG %4.0fW", lab, ut, mu/1024, mt/1024, po)
+            if (col==0) printf "   "
+            printf "%s%-7s%s %s%3d%%%s %s%.0f/%.0fG%s %s%4.0fW%s", \
+                DIM, lab, N, hcol(ut), ut, N, \
+                hcol(mpct), mu/1024, mt/1024, N, C, po, N
+            pad=26-length(plain); if (pad<1) pad=1
+            if (++col==cols) { printf "\n"; col=0 }
+            else for (k=0;k<pad;k++) printf " "
         }
-        printf "\n"
+        if (col!=0) printf "\n"
     }
 }
 ' capf="$tmp/cap" usef="$tmp/use" statf="$tmp/stats" "$tmp/cap" "$tmp/use" "$tmp/stats"
