@@ -109,3 +109,8 @@ exposed = { lf = "lf" }
 channels = ["conda-forge"]
 dependencies = { dust = "*" }
 exposed = { dust = "dust" }
+
+[envs.wandb]
+channels = ["conda-forge"]
+dependencies = { wandb = "*" }
+exposed = { wandb = "wandb", wb = "wb" }

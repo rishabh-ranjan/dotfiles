@@ -106,6 +106,25 @@ all jobs relevant to the current session.
 
 Ensure medium- to long- running jobs are pre-emptible.
 
+## Auto-requeue on timeout AND preemption
+
+Keep app code infra-independent: it only checkpoints periodically and resumes
+from the latest checkpoint at startup. No signals, no `scontrol` in app code.
+All SLURM specifics live in the batch script:
+- `sbatch --requeue --signal=B:USR1@120` (USR1 fires 120s before the wall).
+- Trap `USR1` (timeout warning) and `TERM` (preemption grace) in the script →
+  `scontrol requeue $SLURM_JOB_ID`. The already-written periodic checkpoint is
+  the resume point; no in-app save needed at signal time.
+```bash
+#SBATCH --requeue
+#SBATCH --signal=B:USR1@120
+_done=0
+requeue() { [ $_done = 1 ] && return; _done=1; scontrol requeue $SLURM_JOB_ID; exit 0; }
+trap requeue USR1 TERM
+srun <plain app, checkpoints periodically, resumes from latest> &
+wait
+```
+
 ## Debugging/development runs on ILC
 
 Debug iterations fail often; don't re-queue each attempt.
