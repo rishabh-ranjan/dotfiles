@@ -41,7 +41,6 @@ sinfo -N -h -o "%N|%G" | sort -u | while IFS='|' read -r node gres; do
     echo "$gres" | tr ',' '\n' | while read -r g; do
         [[ "$g" == gpu:* ]] || continue
         gtype=$(echo "$g" | cut -d: -f2)
-        [[ "$gtype" == a100* ]] || continue
         gcnt=$(echo "$g" | cut -d: -f3 | sed 's/(.*//')
         [[ "$gcnt" =~ ^[0-9]+$ ]] || gcnt=0
         echo "$node|$gtype|$gcnt"
@@ -131,7 +130,7 @@ END {
     for (nd in cap) nlist[++nn]=nd
     for (ai=1;ai<=nn;ai++) for (bi=ai+1;bi<=nn;bi++) if (nlist[bi]<nlist[ai]){t=nlist[ai];nlist[ai]=nlist[bi];nlist[bi]=t}
 
-    printf "%sGPU usage — ILC a100%s   ", BOLD, N
+    printf "%sGPU usage — ILC%s   ", BOLD, N
     # legend
     for (i=1;i<=no;i++) printf "%s\xe2\x96\xa0%s%s%s%s  ", ucol[ord[i]], (ord[i]==ME?BOLD:""), ord[i], (ord[i]==ME?"*":""), N
     printf "\n"
@@ -148,7 +147,7 @@ END {
         }
         for (k=drawn;k<c;k++) s=s DIM "\xe2\x96\xa1"
         pad=""; for (k=c;k<maxg;k++) pad=pad " "          # align ragged-width bars
-        printf "  %-4s %s%s%s%s", shortnd(nd), s, N, pad, (col<cols-1?"   ":"")
+        printf "  %-4s %s%-6s%s %s%s%s%s", shortnd(nd), DIM, type[nd], N, s, N, pad, (col<cols-1?"   ":"")
         if (++col==cols) { printf "\n"; col=0 }
     }
     if (col!=0) printf "\n"
