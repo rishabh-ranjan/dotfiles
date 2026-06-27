@@ -151,3 +151,16 @@ so size `--time` to the session and release it promptly.
 Once debugged, submit the real run as a pre-emptible production job.
 
 
+## 12 gpus are always instantly available, dont waste them
+
+Put jobs on `il` and `il-interactive` qos if available,
+upto 12 gpus (as of now, might change) should always be available through them
+instantly.
+
+
+## allocate in bulk on il-lo
+
+Always allocate max-time jobs on il-lo and overlap other jobs against it
+as required.
+Free up the allocation if you dont foresee needing any jobs in the near future.
+This prevents new jobs always landing at the bottom of the queue.
