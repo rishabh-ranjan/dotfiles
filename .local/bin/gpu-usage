@@ -135,8 +135,8 @@ FILENAME==statf {
     if (!(g in gseen)) { gseen[g]=1; glist[++ng]=g }
     gn[g]++
     if (!(g in gtype)) gtype[g]=type[$2]
-    gusum[g]+=$5+0
-    gmu[g]+=$6+0; gmt[g]+=$7+0; gpow[g]+=$4+0
+    i=gn[g]
+    rnode[g,i]=$2; ridx[g,i]=$3; rpow[g,i]=$4+0; rutil[g,i]=$5+0; rmu[g,i]=$6+0; rmt[g,i]=$7+0
     next
 }
 FILENAME==pendf {
@@ -201,13 +201,16 @@ END {
     }
     if (col!=0) printf "\n"
 
-    # ---- my jobs: live stats grouped by name-prefix (sampled) --------------
+    # ---- my jobs: live per-GPU stats grouped by name-prefix (sampled) ------
     for (gi=1;gi<=ng;gi++) {
-        g=glist[gi]; n=gn[g]; au=gusum[g]/n; tot=(g in gtot && gtot[g]>n)?gtot[g]:n
-        printf "   %s%-16s%s %s%d %s%s  %s%d%%%s  %.0f/%.0fG  %.0fW%s\n", \
-            BOLD, g, N, DIM, tot, (g in gtype?gtype[g]:"gpu"), N, hcol(au), au, N, \
-            (gmu[g]/n)/1024, (gmt[g]/n)/1024, gpow[g]/n, \
-            (tot>n ? sprintf("  %s(sampled %d)%s", DIM, n, N) : "")
+        g=glist[gi]; n=gn[g]; tot=(g in gtot && gtot[g]>n)?gtot[g]:n
+        printf "  %s%s%s %s%d %s%s%s\n", BOLD, g, N, DIM, tot, (g in gtype?gtype[g]:"gpu"), \
+            (tot>n ? sprintf(", sampled %d", n) : ""), N
+        for (i=1;i<=n;i++) {
+            u=rutil[g,i]; mstr=sprintf("%.0f/%.0fG", rmu[g,i]/1024, rmt[g,i]/1024)
+            printf "     %s%-4s g%-2s%s %s%4d%%%s  %-9s %4.0fW\n", \
+                DIM, shortnd(rnode[g,i]), ridx[g,i], N, hcol(u), u, N, mstr, rpow[g,i]
+        }
     }
 
     # ---- pending jobs summary ----------------------------------------------
