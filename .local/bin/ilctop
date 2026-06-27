@@ -1,0 +1,553 @@
+#!/usr/bin/env python3
+"""ilctop - at-a-glance GPU/CPU/job view for the ILC SLURM cluster.
+
+Three vertically-compact sections:
+
+  1. GPU MAP   Every GPU on the cluster shown as a single character:
+                  .   free          x   node unavailable (drain/down)
+                  <c> in use; <c> is a letter identifying the owning user
+               The glyph COLOUR encodes the holding job's QoS:
+                  red = il-interactive   orange = il   grey = il-lo
+               Your own GPUs are bold. Nodes are packed into columns to
+               keep the map short.
+
+  2. MY JOBS   For each of your running GPU jobs: live per-GPU utilisation,
+               memory (used/total) and power, plus per-job CPU utilisation
+               and memory (used/allocated) aggregated over all its cores.
+
+  3. PENDING   Queued jobs grouped by (gpu type, qos) with the count and
+               SLURM's estimated start time (ETA).
+
+Live numbers are read with a short `srun --overlap` into each of your jobs
+(nvidia-smi + cgroup-v2). The kernel only exposes your own GPUs to you, so
+everyone else is shown from the SLURM allocation view.
+"""
+
+import argparse
+import datetime
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+# --- environment -------------------------------------------------------------
+# Strip SLURM_* so an `srun` we launch is not treated as a sub-step of a job
+# this tool might itself be running inside.
+ENV = {k: v for k, v in os.environ.items() if not k.startswith("SLURM")}
+ME = os.environ.get("USER") or "?"
+
+USE_COLOR = (sys.stdout.isatty() or "FORCE_COLOR" in os.environ) and "NO_COLOR" not in os.environ
+ANSI_RE = re.compile(r"\033\[[0-9;]*m")
+
+# QoS -> 256-colour foreground (priority high->low: red, orange, grey)
+QOS_FG = {
+    "il-interactive": 196,   # red
+    "il": 208,               # orange
+    "il-lo": 240,            # near-black grey (lowest priority, de-emphasised)
+    "il-cpu-long": 109,
+    "normal": 39,
+    "dev": 141,
+}
+QOS_DEFAULT_FG = 250
+GPU_TYPE_ORDER = ["a100", "rtx8000", "2080ti", "titanxp"]
+
+
+def paint(s, *codes):
+    if not USE_COLOR or not codes:
+        return s
+    return "\033[" + ";".join(str(c) for c in codes) + "m" + s + "\033[0m"
+
+
+def vlen(s):
+    return len(ANSI_RE.sub("", s))
+
+
+def qos_codes(q):
+    return (38, 5, QOS_FG.get(q, QOS_DEFAULT_FG))
+
+
+def run(cmd, timeout=20):
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=timeout, env=ENV)
+        return p.returncode, p.stdout
+    except Exception:
+        return 1, ""
+
+
+def parse_mem(s):
+    """SLURM TRES mem field ('140G', '100M', '2050000') -> bytes (base 1024)."""
+    m = re.match(r"(\d+(?:\.\d+)?)\s*([KMGT]?)", s.strip())
+    if not m:
+        return None
+    mult = {"": 2 ** 20, "K": 1024, "M": 2 ** 20, "G": 2 ** 30, "T": 2 ** 40}
+    # bare number from tres-alloc mem is MB
+    return float(m.group(1)) * mult[m.group(2)]
+
+
+def natkey(name):
+    m = re.match(r"([a-zA-Z]+)(\d*)", name)
+    return (m.group(1), int(m.group(2) or 0)) if m else (name, 0)
+
+
+def shorten(s, n):
+    """Truncate keeping the right (more distinctive) side."""
+    return ("…" + s[-(n - 1):]) if len(s) > n else s
+
+
+def short_node(n):
+    m = re.match(r"([a-zA-Z]+)(\d*)", n)
+    if not m:
+        return n
+    a, num = m.group(1), m.group(2)
+    ab = {"ampere": "a", "turing": "t", "hyperturing": "ht",
+          "hyperion": "hn"}.get(a, a[:2])
+    return ab + num
+
+
+# --- data collection ---------------------------------------------------------
+def get_nodes():
+    """name -> {type, cap, state}; only GPU nodes."""
+    _, out = run(["sinfo", "-N", "-h", "-o", "%N|%G|%t"])
+    nodes = {}
+    for line in out.splitlines():
+        p = line.split("|")
+        if len(p) < 3 or p[0] in nodes:
+            continue
+        name, gres, state = p[0], p[1], p[2]
+        gtype, gcnt = None, 0
+        for g in gres.split(","):
+            m = re.match(r"gpu:([^:]+):(\d+)", g)
+            if m:
+                gtype, gcnt = m.group(1), int(m.group(2))
+                break
+        if gcnt:
+            nodes[name] = dict(type=gtype, cap=gcnt, state=state)
+    return nodes
+
+
+_NLCACHE = {}
+
+
+def expand_nodes(nl):
+    if nl in _NLCACHE:
+        return _NLCACHE[nl]
+    if "[" in nl:
+        _, out = run(["scontrol", "show", "hostnames", nl])
+        r = out.split()
+    else:
+        r = [nl] if nl else []
+    _NLCACHE[nl] = r
+    return r
+
+
+def get_running():
+    _, out = run(["squeue", "-h", "-t", "R", "-O",
+                  "UserName:|,QOS:|,NumNodes:|,NodeList:|,tres-alloc:|"])
+    jobs = []
+    for line in out.splitlines():
+        f = line.split("|")
+        if len(f) < 5:
+            continue
+        m = re.search(r"gres/gpu=(\d+)", f[4])
+        jobs.append(dict(user=f[0].strip(), qos=f[1].strip(),
+                         nn=int(f[2].strip() or 1), nodelist=f[3].strip(),
+                         gpu=int(m.group(1)) if m else 0))
+    return jobs
+
+
+def get_my_jobs():
+    # Name queried LAST: job names can contain '|' (our delimiter); trailing
+    # fields absorb the overflow instead of misaligning earlier columns.
+    _, out = run(["squeue", "-h", "-u", ME, "-t", "R", "-O",
+                  "JobID:|,QOS:|,NodeList:|,tres-alloc:|,Name:|"])
+    jobs = []
+    for line in out.splitlines():
+        f = line.split("|")
+        if len(f) < 5:
+            continue
+        tres = f[3]
+        g = re.search(r"gres/gpu=(\d+)", tres)
+        cpu = re.search(r"cpu=(\d+)", tres)
+        mem = re.search(r"mem=([0-9.]+[KMGT]?)", tres)
+        jobs.append(dict(
+            jobid=f[0].strip(), qos=f[1].strip(),
+            node=expand_nodes(f[2].strip())[0] if f[2].strip() else "",
+            gpu=int(g.group(1)) if g else 0,
+            cpu=int(cpu.group(1)) if cpu else 0,
+            mem=parse_mem(mem.group(1)) if mem else None,
+            name="|".join(f[4:]).strip(),
+        ))
+    return jobs
+
+
+def get_pending():
+    _, out = run(["squeue", "-h", "-t", "PD", "-O",
+                  "UserName:|,QOS:|,tres-per-node:|,StartTime:|"])
+    pend = []
+    for line in out.splitlines():
+        f = line.split("|")
+        if len(f) < 4:
+            continue
+        user, qos, b, st = f[0].strip(), f[1].strip(), f[2].strip(), f[3].strip()
+        rest = b[len("gres/gpu:"):] if b.startswith("gres/gpu:") else ""
+        if rest == "" or rest == "0":
+            gtype, cnt = "cpu", 0
+        elif rest.isdigit():
+            gtype, cnt = "any", int(rest)
+        else:
+            t, _, c = rest.rpartition(":")
+            gtype, cnt = t, int(c) if c.isdigit() else 1
+        try:
+            eta = datetime.datetime.strptime(st, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            eta = None
+        pend.append(dict(user=user, qos=qos, type=gtype, cnt=cnt, eta=eta))
+    return pend
+
+
+def collect_job(job):
+    """Live GPU + CPU stats for one of my jobs via a single srun --overlap."""
+    jid, node = job["jobid"], job["node"]
+    if not node:
+        return None
+    snippet = (
+        "B=/sys/fs/cgroup/system.slice/slurmstepd.scope/job_%s\n"
+        "nvidia-smi --query-gpu=index,utilization.gpu,memory.used,"
+        "memory.total,power.draw --format=csv,noheader,nounits 2>/dev/null\n"
+        "echo @CG\n"
+        'echo -n "T1 "; date +%%s%%N\n'
+        'echo -n "U1 "; grep ^usage_usec $B/cpu.stat 2>/dev/null\n'
+        "sleep 0.4\n"
+        'echo -n "T2 "; date +%%s%%N\n'
+        'echo -n "U2 "; grep ^usage_usec $B/cpu.stat 2>/dev/null\n'
+        'echo -n "AN "; grep "^anon " $B/memory.stat 2>/dev/null\n'
+        'echo -n "MX "; cat $B/memory.max 2>/dev/null\n'
+    ) % jid
+    _, out = run(["srun", "--jobid", jid, "--overlap", "-w", node,
+                  "--ntasks=1", "bash", "-c", snippet], timeout=30)
+    if "@CG" not in out:
+        return None
+    head, tail = out.split("@CG", 1)
+    gpus = []
+    for ln in head.splitlines():
+        p = [x.strip() for x in ln.split(",")]
+        if len(p) >= 5 and p[0].isdigit():
+            try:
+                gpus.append(dict(idx=int(p[0]), util=float(p[1]),
+                                 mu=float(p[2]), mt=float(p[3]), pw=float(p[4])))
+            except ValueError:
+                pass
+    d = {}
+    for ln in tail.splitlines():
+        tag, _, val = ln.partition(" ")
+        num = re.search(r"(\d+)", val)
+        if tag in ("T1", "T2"):
+            d[tag] = int(num.group(1)) if num else None
+        elif tag in ("U1", "U2", "AN", "MX"):
+            d[tag] = int(num.group(1)) if num else None
+    cores = None
+    if all(d.get(k) is not None for k in ("T1", "T2", "U1", "U2")) and d["T2"] > d["T1"]:
+        cores = (d["U2"] - d["U1"]) / 1e6 / ((d["T2"] - d["T1"]) / 1e9)
+    return dict(gpus=gpus, anon=d.get("AN"), mmax=d.get("MX"), cores=cores)
+
+
+# --- user -> single character ------------------------------------------------
+def assign_chars(users):
+    order = ([ME] if ME in users else []) + sorted(u for u in users if u != ME)
+    chars, used = {}, set()
+    for u in order:
+        cand = [u[0].lower(), u[0].upper()] + [c.lower() for c in u[1:]]
+        cand += list("0123456789@#$%&+=")
+        for ch in cand:
+            if ch not in used:
+                chars[u], _ = ch, used.add(ch)
+                break
+        else:
+            chars[u] = "?"
+    return chars, order
+
+
+# --- rendering ---------------------------------------------------------------
+def hum_gib(b):
+    return b / 2 ** 30 if b is not None else None
+
+
+def fmt_g(gib):
+    return "%.1fT" % (gib / 1024) if gib >= 1024 else "%.0fG" % gib
+
+
+def gutil_codes(u):
+    return (38, 5, 40) if u >= 70 else (38, 5, 220) if u >= 30 else (38, 5, 203)
+
+
+def render(nodes, running, my, pending, width):
+    L = []
+
+    # attribute running GPUs to (node, user, qos)
+    counts = {}          # node -> {(user, qos): n}
+    used_type = {}       # gpu type -> n used
+    for j in running:
+        if j["gpu"] <= 0:
+            continue
+        nds = expand_nodes(j["nodelist"])
+        if not nds:
+            continue
+        per = max(1, j["gpu"] // max(1, len(nds)))
+        for nd in nds:
+            if nd not in nodes:
+                continue
+            counts.setdefault(nd, {})
+            key = (j["user"], j["qos"])
+            counts[nd][key] = counts[nd].get(key, 0) + per
+            used_type[nodes[nd]["type"]] = used_type.get(nodes[nd]["type"], 0) + per
+
+    users = {k[0] for nd in counts for k in counts[nd]}
+    chars, order = assign_chars(users)
+
+    # ---- header line: title + qos colour key ----
+    now = datetime.datetime.now()
+    swatches = "  ".join(
+        paint(q, *qos_codes(q)) for q in ["il-interactive", "il", "il-lo"]
+    )
+    L.append(paint("ilctop", 1) + paint("  " + now.strftime("%a %d %b %H:%M:%S"), 2)
+             + ("   qos: " + swatches if swatches else ""))
+
+    # ---- totals per gpu type ----
+    total_type = {}
+    for n in nodes:
+        total_type[nodes[n]["type"]] = total_type.get(nodes[n]["type"], 0) + nodes[n]["cap"]
+    tt = sorted(total_type, key=lambda t: (GPU_TYPE_ORDER.index(t)
+                if t in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER), t))
+    parts = []
+    tot_all = used_all = 0
+    for t in tt:
+        u = used_type.get(t, 0)
+        tot_all += total_type[t]
+        used_all += u
+        free = total_type[t] - u
+        col = 40 if free > 0 else 203
+        parts.append("%s %s/%d" % (paint(t, 2), paint(str(free), 38, 5, col), total_type[t]))
+    L.append("  free " + paint("%d/%d" % (tot_all - used_all, tot_all), 1)
+             + "   " + "  ".join(parts))
+
+    # ---- user legend ----
+    leg = []
+    for u in order:
+        g = chars[u]
+        if u == ME:
+            leg.append(paint(g, 1) + paint("=" + u + "*", 1))
+        else:
+            leg.append(g + paint("=" + u, 2))
+    if leg:
+        L.append("  " + "  ".join(leg))
+
+    # ---- gpu map, packed into columns ----
+    label_w = max(len(n) for n in nodes)
+    type_w = max(len(nodes[n]["type"]) for n in nodes)
+    glyph_w = max(nodes[n]["cap"] for n in nodes)
+    nlist = sorted(nodes, key=lambda n: ((GPU_TYPE_ORDER.index(nodes[n]["type"])
+              if nodes[n]["type"] in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER),) + natkey(n)))
+    cells = []
+    for n in nlist:
+        nd = nodes[n]
+        cap = nd["cap"]
+        avail = not any(x in nd["state"] for x in
+                        ("down", "drain", "drng", "resv", "maint", "fail", "boot", "unk"))
+        g, drawn = "", 0
+        items = sorted(counts.get(n, {}).items(),
+                       key=lambda kv: (kv[0][0] != ME, kv[0][0], kv[0][1]))
+        for (u, q), c in items:
+            for _ in range(c):
+                if drawn >= cap:
+                    break
+                codes = qos_codes(q) + ((1,) if u == ME else ())
+                g += paint(chars.get(u, "?"), *codes)
+                drawn += 1
+        free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 196))
+        g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
+        g += " " * (glyph_w - cap)
+        cell = "%-*s %s %s" % (label_w, n, paint("%-*s" % (type_w, nd["type"]), 2), g)
+        cells.append(cell)
+    cellw = label_w + 1 + type_w + 1 + glyph_w
+    gap = 3
+    ncols = max(1, (width + gap) // (cellw + gap))
+    for i in range(0, len(cells), ncols):
+        L.append("  " + (" " * gap).join(cells[i:i + ncols]))
+
+    # ---- my jobs: per-GPU cells, sharded sweeps collapsed into groups -------
+    # Per-GPU stats (util/mem/power) are shown for every GPU; CPU stats are
+    # per-job (one job == one cell). Jobs whose names differ only by a trailing
+    # numeric shard index are folded into one group with packed cells; distinct
+    # experiments stay on their own line.
+    type_of = {n: nodes[n]["type"] for n in nodes}
+    cpu_jobs = [j for j in my if j["gpu"] == 0]
+    entries = []
+    for j in my:
+        if j["gpu"] <= 0:
+            continue
+        live = j.get("live") or {}
+        dname = j["name"].rstrip("|")
+        gkey = re.sub(r"[|_\-]\d+$", "", dname) or dname
+        for gp in (live.get("gpus") or [None]):
+            entries.append(dict(gkey=gkey, dname=dname, node=j["node"],
+                                type=type_of.get(j["node"], "?"), cpu=j["cpu"],
+                                mem=j["mem"], cores=live.get("cores"),
+                                anon=live.get("anon"), mmax=live.get("mmax"), gp=gp))
+
+    L.append("")
+    extra = ""
+    if cpu_jobs:
+        extra = paint("  +%d cpu-only (%dc, %s)" % (len(cpu_jobs),
+                      sum(j["cpu"] for j in cpu_jobs),
+                      fmt_g(hum_gib(sum(j["mem"] or 0 for j in cpu_jobs)) or 0)), 2)
+    L.append(paint("my jobs", 1) + paint(" · %d gpu" % len(entries), 2) + extra
+             + paint("    [util · gmem · pwr · cpu-cores · cpu-mem]", 2))
+
+    def metrics(e):
+        gp = e["gp"]
+        if gp:
+            gu = paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"]))
+            gm = "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024)
+            pw = "%3.0fW" % gp["pw"]
+        else:
+            gu, gm, pw = paint("  ?", 2), paint("    ?", 2), paint("  ?", 2)
+        cu = ("%4.1fc" % e["cores"]) if e["cores"] is not None else paint("   ?c", 2)
+        alloc = e["mmax"] if (e["mmax"] and e["mmax"] < 2 ** 62) else e["mem"]
+        if e["anon"] is not None and alloc:
+            cm = "%.0f/%.0fG" % (hum_gib(e["anon"]), hum_gib(alloc))
+            if e["anon"] / alloc > 0.9:
+                cm = paint(cm, 38, 5, 203)
+        else:
+            cm = paint("?", 2)
+        return "%s %7s %4s  %5s %8s" % (gu, gm, pw, cu, cm)
+
+    def pack(cells, indent):
+        cw = max(vlen(c) for c in cells)
+        cells = [c + " " * (cw - vlen(c)) for c in cells]
+        k = max(1, (width - len(indent)) // (cw + 2))
+        for i in range(0, len(cells), k):
+            L.append(indent + "  ".join(cells[i:i + k]))
+
+    groups = {}
+    for e in entries:
+        groups.setdefault(e["gkey"], []).append(e)
+    multi, singles = [], []
+    for gk in sorted(groups, key=lambda k: (natkey(groups[k][0]["node"]), k)):
+        es = groups[gk]
+        for e in es:
+            e["lbl"] = e["dname"][len(gk):].strip("|_-")
+        (multi if len(es) > 1 else singles).append((gk, es))
+
+    # sharded sweeps: aggregate header + packed per-GPU cells
+    for gk, es in multi:
+        utils = [e["gp"]["util"] for e in es if e["gp"]]
+        agg = ""
+        if utils:
+            agg = "  util %.0f–%.0f~%.0f  %.0fW" % (
+                min(utils), max(utils), sum(utils) / len(utils),
+                sum(e["gp"]["pw"] for e in es if e["gp"]))
+        L.append("  %s %s%s" % (paint("▸", 2), paint(shorten(gk, 36), 1),
+                 paint("  %d×%s%s" % (len(es), es[0]["type"], agg), 2)))
+        lw = min(20, max(len(e["lbl"]) + 1 + len(short_node(e["node"])) for e in es))
+        pack(["%-*s %s" % (lw, e["lbl"] + "·" + short_node(e["node"]), metrics(e))
+              for e in es], "    ")
+
+    # individual jobs: one cell each, packed across the width
+    if singles:
+        pack(["%-26s %-4s %s" % (shorten(es[0]["dname"], 26),
+              short_node(es[0]["node"]), metrics(es[0])) for _, es in singles], "  ")
+
+    # ---- pending ----
+    groups = {}
+    for p in pending:
+        key = (p["type"], p["cnt"], p["qos"])
+        gr = groups.setdefault(key, dict(n=0, eta=None, mine=False))
+        gr["n"] += 1
+        gr["mine"] = gr["mine"] or (p["user"] == ME)
+        if p["eta"] and (gr["eta"] is None or p["eta"] < gr["eta"]):
+            gr["eta"] = p["eta"]
+    if groups:
+        L.append("")
+        L.append(paint("pending", 1) + paint(" · %d jobs" % sum(g["n"] for g in groups.values()), 2))
+        ordered = sorted(groups.items(),
+                         key=lambda kv: (kv[1]["eta"] is None, kv[1]["eta"] or now))
+        items = []
+        for (gtype, cnt, qos), gr in ordered:
+            label = "cpu" if gtype == "cpu" else "%d×%s" % (cnt, gtype)
+            star = paint("*", 1) if gr["mine"] else ""
+            eta = fmt_eta(gr["eta"], now)
+            items.append("%s× %s %s%s → %s"
+                         % (paint(str(gr["n"]), 1), label,
+                            paint(qos, *qos_codes(qos)), star, eta))
+        # wrap items to width
+        line, ll = "  ", 2
+        for it in items:
+            w = vlen(it) + 3
+            if ll + w > width and line.strip():
+                L.append(line)
+                line, ll = "  ", 2
+            line += it + "   "
+            ll += w
+        if line.strip():
+            L.append(line)
+
+    return L
+
+
+def fmt_eta(dt, now):
+    if dt is None:
+        return paint("—", 2)
+    delta = (dt - now).total_seconds()
+    hm = dt.strftime("%H:%M") if dt.date() == now.date() else dt.strftime("%m-%d %H:%M")
+    if delta < 0:
+        rel = "now"
+    elif delta < 3600:
+        rel = "%dm" % (delta / 60)
+    elif delta < 86400:
+        rel = "%.0fh" % (delta / 3600)
+    else:
+        rel = "%.0fd" % (delta / 86400)
+    return "%s %s" % (hm, paint("(" + rel + ")", 2))
+
+
+def build(no_live):
+    nodes = get_nodes()
+    running = get_running()
+    my = get_my_jobs()
+    pending = get_pending()
+    if not no_live:
+        gpu_jobs = [j for j in my if j["gpu"] > 0]
+        with ThreadPoolExecutor(max_workers=16) as ex:
+            for j, r in zip(gpu_jobs, ex.map(collect_job, gpu_jobs)):
+                j["live"] = r
+    width = shutil.get_terminal_size((120, 40)).columns
+    return render(nodes, running, my, pending, width)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="at-a-glance ILC cluster GPU/job view")
+    ap.add_argument("-w", "--watch", nargs="?", type=float, const=5.0, default=None,
+                    metavar="SEC", help="refresh every SEC seconds (default 5)")
+    ap.add_argument("-n", "--no-live", action="store_true",
+                    help="skip per-job srun probes (SLURM allocation view only, fast)")
+    args = ap.parse_args()
+
+    if args.watch:
+        try:
+            while True:
+                out = "\n".join(build(args.no_live))
+                sys.stdout.write("\033[H\033[2J" + out + "\n")
+                sys.stdout.flush()
+                time.sleep(args.watch)
+        except KeyboardInterrupt:
+            pass
+    else:
+        print("\n".join(build(args.no_live)))
+
+
+if __name__ == "__main__":
+    main()
