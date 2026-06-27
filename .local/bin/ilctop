@@ -334,14 +334,28 @@ def render(nodes, running, my, pending, width):
     L.append("  free " + paint("%d/%d" % (tot_all - used_all, tot_all), 1)
              + "   " + "  ".join(parts))
 
-    # ---- user legend ----
+    # ---- user legend with per-user GPU totals (me first, then most-used) ----
+    user_gpu, user_type = {}, {}
+    for nd in counts:
+        t = nodes[nd]["type"]
+        for (u, _q), n in counts[nd].items():
+            user_gpu[u] = user_gpu.get(u, 0) + n
+            ut = user_type.setdefault(u, {})
+            ut[t] = ut.get(t, 0) + n
+    leg_order = ([ME] if ME in user_gpu else []) + sorted(
+        (u for u in order if u != ME), key=lambda u: (-user_gpu.get(u, 0), u))
     leg = []
-    for u in order:
-        g = chars[u]
+    for u in leg_order:
+        n = user_gpu.get(u, 0)
+        bd = user_type.get(u, {})
+        suffix = ""
+        if len(bd) > 1:  # spans >1 gpu type: show the split
+            suffix = paint(" (" + " ".join("%d×%s" % (bd[t], t)
+                     for t in sorted(bd, key=lambda t: -bd[t])) + ")", 2)
         if u == ME:
-            leg.append(paint(g, 1) + paint("=" + u + "*", 1))
+            leg.append(paint("%s=%s* %d" % (chars[u], u, n), 1) + suffix)
         else:
-            leg.append(g + paint("=" + u, 2))
+            leg.append("%s%s %d%s" % (chars[u], paint("=" + u, 2), n, suffix))
     if leg:
         L.append("  " + "  ".join(leg))
 
