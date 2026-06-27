@@ -105,16 +105,16 @@ cat "$tmp"/stats.*.* 2>/dev/null > "$tmp/stats" || true
 : > "$tmp/grptot"
 for g in "${!grptot[@]}"; do printf '%s|%s\n' "$g" "${grptot[$g]}"; done > "$tmp/grptot"
 
-# --- pending jobs: gpu_type|gpus_per_job -------------------------------------
+# --- pending jobs: gpu_type|qos|gpus_per_job ---------------------------------
 # %b is the requested gres, e.g. "gres/gpu:1" (any type) or "gres/gpu:a100:1".
 : > "$tmp/pend"
-squeue -h -t PD -o "%b" 2>/dev/null | while read -r b; do
+squeue -h -t PD -o "%b|%q" 2>/dev/null | while IFS='|' read -r b qos; do
     [[ "$b" == gres/gpu:* ]] || continue
     rest="${b#gres/gpu:}"
     if [[ "$rest" == *:* ]]; then gtype="${rest%:*}"; gcnt="${rest##*:}"
     else gtype="any"; gcnt="$rest"; fi
     [[ "$gcnt" =~ ^[1-9][0-9]*$ ]] || continue
-    echo "$gtype|$gcnt"
+    echo "$gtype|${qos:-?}|$gcnt"
 done > "$tmp/pend"
 
 # --- render ------------------------------------------------------------------
@@ -140,9 +140,10 @@ FILENAME==statf {
     next
 }
 FILENAME==pendf {
-    # gpu_type|gpus_per_job
-    if (!($1 in ptseen)) { ptseen[$1]=1; ptl[++npt]=$1 }
-    pjobs[$1]++; pgpu[$1]+=$2
+    # gpu_type|qos|gpus_per_job
+    key=$1 SUBSEP $2
+    if (!(key in ptseen)) { ptseen[key]=1; ptl[++npt]=key; pktype[key]=$1; pkqos[key]=$2 }
+    pjobs[key]++; pgpu[key]+=$3
     next
 }
 END {
@@ -213,7 +214,7 @@ END {
     if (npt>0) {
         for (ai=1;ai<=npt;ai++) for (bi=ai+1;bi<=npt;bi++) if (ptl[bi]<ptl[ai]){x=ptl[ai];ptl[ai]=ptl[bi];ptl[bi]=x}
         printf "  %spending%s", DIM, N
-        for (pi=1;pi<=npt;pi++) { t=ptl[pi]; printf "   %d\xc3\x97%s%s %s(%d job%s)%s", pgpu[t], t, N, DIM, pjobs[t], (pjobs[t]>1?"s":""), N }
+        for (pi=1;pi<=npt;pi++) { t=ptl[pi]; printf "   %d\xc3\x97%s %s%s%s %s(%d job%s)%s", pgpu[t], pktype[t], DIM, pkqos[t], N, DIM, pjobs[t], (pjobs[t]>1?"s":""), N }
         printf "\n"
     }
 }
