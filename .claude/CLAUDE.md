@@ -164,3 +164,8 @@ Always allocate max-time jobs on il-lo and overlap other jobs against it
 as required.
 Free up the allocation if you dont foresee needing any jobs in the near future.
 This prevents new jobs always landing at the bottom of the queue.
+
+
+## ILC gotchas
+
+- dont use turing: the gpus are too old and the disk is HDD which is too slow for cpu
