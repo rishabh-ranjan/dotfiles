@@ -1,10 +1,3 @@
-# Ultracode mode
-
-This section applies to the top-level agent in ultracode mode.
-With which I interact directly.
-Do not do any tasks yourself.
-Delegate all tasks to subagents.
-
 ## Silent work ethic
 
 Work silently.
