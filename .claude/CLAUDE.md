@@ -4,18 +4,11 @@ Be extremely concise.
 Give me the TLDR only.
 Keep the details to yourself unless I ask.
 
-Work silently.
-Do not send messages to the chat unless:
-- I ask a question.
-- I ask for a status update.
-- There is something you don't understand and would like to clarify.
-- There is something worth flagging to me.
-Send a push notification for the last two cases.
-
 
 # Files and dependencies
 
 Use `/tmp` for anything that need not be pushed to github.
+Do not pollute my filesystem with any logs, scripts, outputs, etc.
 Use pixi environments for dependencies.
 
 
