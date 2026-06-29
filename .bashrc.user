@@ -1,9 +1,11 @@
 # vim: set ft=bash
 
-if [[ $(hostname) = *.stanford.edu ]]
+export HOME="/lfs/local/0/ranjanr"
+if [[ -d $HOME ]]
 then
-	export HOME="/lfs/local/0/ranjanr"
 	cd
+else
+	unset HOME
 fi
 
 # if not interactive, exit
