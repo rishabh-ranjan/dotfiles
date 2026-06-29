@@ -9,7 +9,7 @@ if ! squeue -h -u "$USER" -n dev-node -t PENDING,RUNNING -o %i | grep -q .; then
     --job-name=dev-node --nodelist=hyperturing1 \
     --nodes=1 --cpus-per-task=8 --mem=60G \
     --time=31-00:00:00 --output=/dev/null \
-    --wrap='tmux new-session -d -s dev bash -l; exec sleep infinity' >/dev/null
+    --wrap='export HOME=/lfs/local/0/ranjanr; cd; export SHELL=/lfs/local/0/ranjanr/.pixi/bin/fish; tmux new-session -d -s dev; exec sleep infinity' >/dev/null
 fi
 
 until jid=$(squeue -h -u "$USER" -n dev-node -t RUNNING -o %i | head -1)
