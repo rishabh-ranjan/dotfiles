@@ -1,20 +1,20 @@
 # vim: set ft=bash
 
-export HOME="/lfs/local/0/ranjanr"
-if [[ -d $HOME ]]
+LFS_HOME="/lfs/local/0/ranjanr"
+if [[ -d $LFS_HOME ]]
 then
-	cd
-else
-	unset HOME
+	export HOME="$LFS_HOME"
 fi
+echo HOME="$HOME"
+cd
 
 # if not interactive, exit
 [[ $- != *i* ]] && return
 
-export SHELL="$HOME/.pixi/bin/fish"
-if [[ -x $SHELL ]]
+FISH_SHELL="$HOME/.pixi/bin/fish"
+if [[ -x $FISH_SHELL ]]
 then
-	exec $SHELL
-else
-	unset SHELL
+	export SHELL="$FISH_SHELL"
 fi
+echo SHELL="$SHELL"
+exec $SHELL
