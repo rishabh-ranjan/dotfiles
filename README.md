@@ -9,9 +9,6 @@ rmdir dotfiles
 curl -fsSL https://pixi.sh/install.sh | sh
 .pixi/bin/pixi global sync
 
-echo 'source ~/.bashrc.user' >> ~/.bashrc
-echo 'source ~/.bashrc.user' >> ~/.zshrc
-
 exit
 ```
 
