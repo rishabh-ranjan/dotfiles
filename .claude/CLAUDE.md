@@ -13,11 +13,10 @@ Do not send messages to the chat unless:
 Send a push notification for the last two cases.
 
 
-# File hygiene
+# Files and dependencies
 
-Use `/tmp` for temporary work.
+Use `/tmp` for anything that need not be pushed to github.
 Use pixi environments for dependencies.
-On ILC cluster, use `/dfs/user/ranjanr` for large files.
 
 
 # Github
