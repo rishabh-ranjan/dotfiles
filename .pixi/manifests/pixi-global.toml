@@ -43,7 +43,7 @@ exposed = { jless = "jless" }
 [envs.nodejs]
 channels = ["conda-forge"]
 dependencies = { nodejs = "*" }
-exposed = { corepack = "corepack", node = "node", npm = "npm", npx = "npx" }
+exposed = { node = "node", npm = "npm", npx = "npx" }
 
 [envs.tmux]
 channels = ["conda-forge"]
