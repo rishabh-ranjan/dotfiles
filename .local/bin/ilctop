@@ -185,7 +185,7 @@ def get_my_jobs():
 
 
 def get_pending():
-    _, out = run(["squeue", "-h", "-t", "PD", "-O",
+    _, out = run(["squeue", "-h", "-u", ME, "-t", "PD", "-O",
                   "UserName:|,QOS:|,tres-per-node:|,StartTime:|"])
     pend = []
     for line in out.splitlines():
