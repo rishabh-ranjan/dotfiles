@@ -27,7 +27,8 @@ Do not compute on the login node, use `srun/sbatch`.
 `/dfs/user/ranjanr` is shared across nodes,
 but it is slow.
 Use node-local `/lfs/local/0/ranjanr` for code, caches, environments, and temporary files.
-Keep github repos in `/lfs/local/0/ranjanr/clones`,
+Clone fresh github repos to run the code in `/tmp/ranjanr/clones`
+and make sure to switch to the relevant branch/commit,
 caches will automatically use `/lfs/local/0/ranjanr/.cache`,
 pixi will automatically create environments in `/lfs/local/0/ranjanr/.pixi`,
 keep temporary files in `/tmp/ranjanr`.
