@@ -22,7 +22,7 @@ In a worktree, merge and push to the branch it was branched from.
 
 Run lightweight commands directly.
 For anything else, use the ILC slurm cluster.
-If on macos, access slurm via `ssh ilc`.
+If slurm commands don't work, try `ssh ilc`.
 Do not compute on the login node, use `srun/sbatch`.
 `/dfs/user/ranjanr` is shared across nodes,
 but it is slow.
