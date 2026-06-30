@@ -1,0 +1,8 @@
+{
+  "autoMemoryEnabled": false,
+  "model": "opus[1m]",
+  "effortLevel": "xhigh",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "light"
+}
