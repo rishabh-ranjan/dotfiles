@@ -26,11 +26,12 @@ If on macos, access slurm via `ssh ilc`.
 Do not compute on the login node, use `srun/sbatch`.
 `/dfs/user/ranjanr` is shared across nodes,
 but it is slow.
-Use node-local `/lfs/local/0/ranjanr` for code, caches, environments, and temporary files.
+Use node-local storage (`/lfs` or `/tmp`)
+for code, caches, environments, and temporary files.
 Clone fresh github repos to run the code in `/tmp/ranjanr/clones`
 and make sure to switch to the relevant branch/commit,
 caches will automatically use `/lfs/local/0/ranjanr/.cache`,
 pixi will automatically create environments in `/lfs/local/0/ranjanr/.pixi`,
-keep temporary files in `/tmp/ranjanr`.
-Only use `/dfs/user/ranjanr` for things that need to be shared.
+keep temporary files in `/tmp/ranjanr/<project_name>`.
+Only use `/dfs/user/ranjanr/<project_name>` for things that need to be shared.
 This does not necessarily include datasets, which can be kept node-local.
