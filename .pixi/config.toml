@@ -1,2 +1,2 @@
-detached-environments = "/lfs/local/0/ranjanr/pixi-envs"
+detached-environments = true
 run-post-link-scripts = "insecure"

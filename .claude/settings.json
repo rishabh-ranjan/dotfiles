@@ -1,8 +1,10 @@
 {
-  "autoMemoryEnabled": false,
-  "model": "opus[1m]",
-  "effortLevel": "xhigh",
+  "model": "fable",
+  "effortLevel": "low",
   "tui": "fullscreen",
+  "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "light"
+  "theme": "light",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }
