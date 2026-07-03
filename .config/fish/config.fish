@@ -16,12 +16,14 @@ set -x PYTHONPATH "$HOME/.config/python"
 set -x WANDB_DIR "$HOME/.cache/"
 set -x WANDB_CONSOLE "off"
 
-set -x GH_TOKEN (cat /sailhome/ranjanr/.secrets/github)
-set -x GITHUB_TOKEN $GH_TOKEN
-set -x HF_TOKEN (cat /sailhome/ranjanr/.secrets/huggingface)
-set -x WANDB_API_KEY (cat /sailhome/ranjanr/.secrets/wandb)
+if string match -q "*.stanford.edu" (hostname)
+	set -x GH_TOKEN (cat /sailhome/ranjanr/.secrets/github)
+	set -x GITHUB_TOKEN $GH_TOKEN
+	set -x HF_TOKEN (cat /sailhome/ranjanr/.secrets/huggingface)
+	set -x WANDB_API_KEY (cat /sailhome/ranjanr/.secrets/wandb)
+	fish_add_path --path "/sailhome/ranjanr/.local/bin"
+	fish_add_path --path "/sailhome/ranjanr/.pixi/bin"
+end
 
-fish_add_path --path "/sailhome/ranjanr/.local/bin"
-fish_add_path --path "/sailhome/ranjanr/.pixi/bin"
 fish_add_path --path "$HOME/.local/bin"
 fish_add_path --path "$HOME/.pixi/bin"

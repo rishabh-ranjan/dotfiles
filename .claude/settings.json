@@ -9,7 +9,7 @@
   "voice": {
     "enabled": true,
     "mode": "hold"
-  }
+  },
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true
 }
