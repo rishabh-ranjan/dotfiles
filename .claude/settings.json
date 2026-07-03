@@ -1,6 +1,6 @@
 {
-  "model": "opus[1m]",
-  "effortLevel": "xhigh",
+  "model": "fable",
+  "effortLevel": "low",
   "tui": "fullscreen",
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
@@ -10,4 +10,6 @@
     "enabled": true,
     "mode": "hold"
   }
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }
