@@ -1,8 +1,13 @@
 {
-  "autoMemoryEnabled": false,
   "model": "opus[1m]",
   "effortLevel": "xhigh",
   "tui": "fullscreen",
+  "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "light"
+  "theme": "light",
+  "voiceEnabled": true,
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  }
 }
