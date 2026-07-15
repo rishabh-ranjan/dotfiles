@@ -16,7 +16,7 @@
     "defaultMode": "dontAsk",
     "additionalDirectories": []
   },
-  "model": "fable",
+  "model": "opus[1m]",
   "fallbackModel": [
     "default"
   ],
@@ -56,8 +56,7 @@
   "terminalTitleFromRename": true,
   "alwaysThinkingEnabled": true,
   "effortLevel": "low",
-  "fastMode": false,
-  "fastModePerSessionOptIn": false,
+  "fastModePerSessionOptIn": true,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
   "showClearContextOnPlanAccept": false,
