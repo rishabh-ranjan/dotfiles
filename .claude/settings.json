@@ -1,5 +1,9 @@
 {
   "model": "fable",
+  "env": {
+    "CLAUDE_CODE_SHELL": "/bin/bash",
+    "SHELL": "/bin/bash"
+  },
   "effortLevel": "low",
   "tui": "fullscreen",
   "autoMemoryEnabled": false,
