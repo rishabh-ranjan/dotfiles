@@ -208,3 +208,7 @@ if (defined $ENV{'CHKTEX_OPTIONS'}) {
         }
     }
 }
+
+# Keep generated/intermediate files out of the source tree.
+# Relative to the invocation dir, so `main.pdf` lands in `build/main.pdf`.
+$out_dir = 'build';
