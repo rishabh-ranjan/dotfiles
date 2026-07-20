@@ -1,6 +1,6 @@
 # Response style
 
-Be extremely concise.
+BE EXTREMELY CONCISE.
 Give me the TLDR only.
 Keep the details to yourself unless I ask.
 
