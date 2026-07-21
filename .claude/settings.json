@@ -42,7 +42,7 @@
   "defaultShell": "bash",
   "respondToBashCommands": true,
   "enabledPlugins": {},
-  "outputStyle": "Explanatory",
+  "outputStyle": "Proactive",
   "viewMode": "focus",
   "language": "english",
   "skipWebFetchPreflight": false,
