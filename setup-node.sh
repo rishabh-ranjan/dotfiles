@@ -29,6 +29,14 @@ die() { echo "setup-node: $*" >&2; exit 1; }
 command -v git >/dev/null || die "no git on PATH"
 command -v curl >/dev/null || die "no curl on PATH"
 
+# Several jobs can land on a fresh node at once and all decide to set it up.
+# Serialize them: the first one does the work, the rest wait and then find a
+# node that is already set up.
+LOCK=${TMPDIR:-/tmp}/.setup-node.lock
+mkdir -p "$(dirname "$LOCK")"
+exec 9>"$LOCK"
+flock 9 || die "cannot take $LOCK"
+
 # ---- 1. node-local home == dotfiles checkout ----
 if [[ ! -d $NODE_HOME/.git ]]; then
     say "cloning dotfiles into $NODE_HOME"
