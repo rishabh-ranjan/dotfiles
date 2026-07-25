@@ -10,12 +10,13 @@ bash ~/setup-node.sh --update   # pull dotfiles + re-sync global tools
 ```
 
 A first login runs it automatically (`.bashrc.user`), so a node you have never
-touched sets itself up. `verify-node.sh` is the cheap, offline check for the
-same assumptions and reinstates them if they are missing -- batch jobs call it
-before doing any real work:
+touched sets itself up. Without `--update` the same script is the check batch
+jobs run before doing any real work: a few stat calls and no network on a
+healthy node, a full setup on a bare one, non-zero exit if the node cannot be
+brought up to spec.
 
 ```bash
-bash /lfs/local/0/$USER/verify-node.sh
+bash /lfs/local/0/$USER/setup-node.sh
 ```
 
 Only these need to exist beforehand: system `git` and `curl`, and

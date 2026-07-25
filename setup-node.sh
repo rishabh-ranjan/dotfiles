@@ -7,6 +7,12 @@
 #   bash setup-node.sh            # set up what is missing
 #   bash setup-node.sh --update   # also pull dotfiles and re-sync global tools
 #
+# Without --update this is also the verification path a batch job runs before
+# doing real work: on a healthy node it is a handful of stat calls and touches
+# the network not at all, and it exits non-zero if the node cannot be brought up
+# to spec. --update is for you, not for jobs -- it pulls, which would let a node
+# change under a running job.
+#
 # On a node that has never been touched, bootstrap it straight from GitHub:
 #
 #   curl -fsSL https://raw.githubusercontent.com/rishabh-ranjan/dotfiles/main/setup-node.sh | bash
@@ -81,5 +87,10 @@ fi
 
 # ---- 4. node-local dirs everything else assumes ----
 mkdir -p "$HOME/.cache" "/tmp/$USER"
+
+# ---- 5. it worked, or nobody should trust this node ----
+for tool in fish git nvim tmux rg ag python; do
+    [[ -x $PIXI_HOME/bin/$tool ]] || die "$tool still missing on $(hostname -s)"
+done
 
 say "ok: $(hostname -s) HOME=$HOME pixi=$(pixi --version)"
