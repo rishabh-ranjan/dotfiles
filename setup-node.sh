@@ -17,7 +17,9 @@
 set -euo pipefail
 
 DOTFILES_URL=https://github.com/rishabh-ranjan/dotfiles
-NODE_HOME=/lfs/local/0/${USER:-$(id -un)}
+# NODE_HOME is overridable only so the cold-start path can be exercised
+# somewhere harmless; nothing in normal use sets it.
+NODE_HOME=${NODE_HOME:-/lfs/local/0/${USER:-$(id -un)}}
 UPDATE=0
 [[ ${1:-} == --update ]] && UPDATE=1
 
