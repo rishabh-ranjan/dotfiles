@@ -5,9 +5,15 @@
 # home is a dotfiles checkout with its own pixi install; setup-node.sh creates
 # both, so the first login to a node sets the node up.
 
+# This is the one path that brings a node up to spec, for interactive logins
+# and for batch jobs alike (a slurm script with `#!/bin/bash -l` is a login
+# shell, so it lands here too). setup-node.sh is a few stat calls and no
+# network once the node is set up, so running it every time is free.
 LFS_HOME="/lfs/local/0/ranjanr"
-if [[ ! -d $LFS_HOME/.git ]]
+if [[ -f $LFS_HOME/setup-node.sh ]]
 then
+	bash "$LFS_HOME/setup-node.sh" || echo "WARNING: setup-node.sh failed" >&2
+else
 	echo "setting up $LFS_HOME"
 	curl -fsSL https://raw.githubusercontent.com/rishabh-ranjan/dotfiles/main/setup-node.sh | bash
 fi
