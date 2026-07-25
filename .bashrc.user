@@ -1,6 +1,12 @@
 # vim: set ft=bash
+#
+# Sole purpose of /sailhome/ranjanr: move an interactive login onto node-local
+# storage and hand over to fish. Nothing of value is kept here -- secrets and
+# the pixi install live on /dfs/user/ranjanr, node-local dirs are created on
+# demand, so no node needs to be set up in advance.
 
 LFS_HOME="/lfs/local/0/ranjanr"
+mkdir -p "$LFS_HOME" 2>/dev/null
 if [[ -d $LFS_HOME ]]
 then
 	export HOME="$LFS_HOME"
@@ -11,7 +17,8 @@ cd
 # if not interactive, exit
 [[ $- != *i* ]] && return
 
-FISH_SHELL="$HOME/.pixi/bin/fish"
+export PIXI_HOME="/dfs/user/ranjanr/.pixi"
+FISH_SHELL="$PIXI_HOME/bin/fish"
 if [[ -x $FISH_SHELL ]]
 then
 	export SHELL="$FISH_SHELL"
