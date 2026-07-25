@@ -1,12 +1,3 @@
-# Response style
-
-For the last message in a thread,
-the only one which the user will see,
-because focus mode is on,
-respond as follows:
-give short bullet points,
-with no extra commentary.
-
 # Files and dependencies
 
 Use `/tmp` for anything that need not be pushed to github.
