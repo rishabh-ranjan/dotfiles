@@ -5,8 +5,22 @@
 # the pixi install live on /dfs/user/ranjanr, node-local dirs are created on
 # demand, so no node needs to be set up in advance.
 
+DFS_HOME="/dfs/user/ranjanr"
+export PIXI_HOME="$DFS_HOME/.pixi"
+PATH="$PIXI_HOME/bin:$PATH"
+
+# The node-local home is a checkout of the dotfiles repo. Clone it if this node
+# has never been used before, so no node needs to be prepared by hand.
 LFS_HOME="/lfs/local/0/ranjanr"
-mkdir -p "$LFS_HOME" 2>/dev/null
+if [[ ! -d $LFS_HOME/.git ]] && command -v git >/dev/null
+then
+	echo "bootstrapping $LFS_HOME from dotfiles"
+	mkdir -p "$LFS_HOME"
+	git clone --quiet https://github.com/rishabh-ranjan/dotfiles "$LFS_HOME.dotfiles" &&
+		mv "$LFS_HOME.dotfiles"/.git "$LFS_HOME/" &&
+		git -C "$LFS_HOME" checkout --quiet -- . &&
+		rm -rf "$LFS_HOME.dotfiles"
+fi
 if [[ -d $LFS_HOME ]]
 then
 	export HOME="$LFS_HOME"
@@ -17,7 +31,6 @@ cd
 # if not interactive, exit
 [[ $- != *i* ]] && return
 
-export PIXI_HOME="/dfs/user/ranjanr/.pixi"
 FISH_SHELL="$PIXI_HOME/bin/fish"
 if [[ -x $FISH_SHELL ]]
 then
