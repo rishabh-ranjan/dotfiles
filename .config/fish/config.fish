@@ -16,24 +16,16 @@ set -x PYTHONPATH "$HOME/.config/python"
 set -x WANDB_DIR "$HOME/.cache/"
 set -x WANDB_CONSOLE "off"
 
-# Shared per-user storage on the cluster; absent on the mac, so everything
-# below is guarded on the directory existing and this file stays portable.
-set -l dfs_home /dfs/user/ranjanr
-
-# One pixi install for the whole cluster: the binary and the global CLI tools
-# live on shared storage, so no node needs setting up. Project environments stay
-# node-local -- detached-environments = true in $PIXI_HOME/config.toml puts them
-# under the pixi cache, which sits in the node-local $HOME.
-if test -d $dfs_home/.pixi
-	set -x PIXI_HOME $dfs_home/.pixi
-else
-	# mac (and anywhere without shared storage): the usual per-user install.
-	set -x PIXI_HOME "$HOME/.pixi"
-end
+# pixi is node-local, inside this home: on the cluster $HOME is a node-local
+# dotfiles checkout (setup-node.sh), on the mac it is the usual home. Same path
+# either way, so no host check is needed.
+set -x PIXI_HOME "$HOME/.pixi"
 fish_add_path --path $PIXI_HOME/bin
 
-# Tokens, readable from every node. Interactive shells export them; batch jobs
-# read the files themselves rather than inheriting the submitting env.
+# Shared per-user storage; absent on the mac, hence the guard. Tokens are the
+# one thing that must not be node-local. Interactive shells export them; batch
+# jobs read the files themselves rather than inheriting the submitting env.
+set -l dfs_home /dfs/user/ranjanr
 if test -d $dfs_home/.secrets
 	set -x GH_TOKEN (cat $dfs_home/.secrets/github)
 	set -x GITHUB_TOKEN $GH_TOKEN

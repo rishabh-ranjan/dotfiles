@@ -1,25 +1,15 @@
 # vim: set ft=bash
 #
 # Sole purpose of /sailhome/ranjanr: move an interactive login onto node-local
-# storage and hand over to fish. Nothing of value is kept here -- secrets and
-# the pixi install live on /dfs/user/ranjanr, node-local dirs are created on
-# demand, so no node needs to be set up in advance.
+# storage and hand over to fish. Nothing of value is kept there. The node-local
+# home is a dotfiles checkout with its own pixi install; setup-node.sh creates
+# both, so the first login to a node sets the node up.
 
-DFS_HOME="/dfs/user/ranjanr"
-export PIXI_HOME="$DFS_HOME/.pixi"
-PATH="$PIXI_HOME/bin:$PATH"
-
-# The node-local home is a checkout of the dotfiles repo. Clone it if this node
-# has never been used before, so no node needs to be prepared by hand.
 LFS_HOME="/lfs/local/0/ranjanr"
-if [[ ! -d $LFS_HOME/.git ]] && command -v git >/dev/null
+if [[ ! -d $LFS_HOME/.git ]]
 then
-	echo "bootstrapping $LFS_HOME from dotfiles"
-	mkdir -p "$LFS_HOME"
-	git clone --quiet https://github.com/rishabh-ranjan/dotfiles "$LFS_HOME.dotfiles" &&
-		mv "$LFS_HOME.dotfiles"/.git "$LFS_HOME/" &&
-		git -C "$LFS_HOME" checkout --quiet -- . &&
-		rm -rf "$LFS_HOME.dotfiles"
+	echo "setting up $LFS_HOME"
+	curl -fsSL https://raw.githubusercontent.com/rishabh-ranjan/dotfiles/main/setup-node.sh | bash
 fi
 if [[ -d $LFS_HOME ]]
 then
@@ -31,6 +21,7 @@ cd
 # if not interactive, exit
 [[ $- != *i* ]] && return
 
+export PIXI_HOME="$HOME/.pixi"
 FISH_SHELL="$PIXI_HOME/bin/fish"
 if [[ -x $FISH_SHELL ]]
 then

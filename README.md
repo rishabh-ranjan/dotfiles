@@ -1,16 +1,28 @@
 # dotfiles
 
+The node-local home (`/lfs/local/0/$USER`) is a checkout of this repo plus its
+own pixi install. `setup-node.sh` creates both and is idempotent, so setting up
+a node, updating one, and checking one are the same command:
+
 ```bash
-cd
-git clone https://github.com/rishabh-ranjan/dotfiles
-mv dotfiles/* dotfiles/.* .
-rmdir dotfiles
-
-curl -fsSL https://pixi.sh/install.sh | sh
-.pixi/bin/pixi global sync
-
-exit
+curl -fsSL https://raw.githubusercontent.com/rishabh-ranjan/dotfiles/main/setup-node.sh | bash
+bash ~/setup-node.sh --update   # pull dotfiles + re-sync global tools
 ```
+
+A first login runs it automatically (`.bashrc.user`), so a node you have never
+touched sets itself up. `verify-node.sh` is the cheap, offline check for the
+same assumptions and reinstates them if they are missing -- batch jobs call it
+before doing any real work:
+
+```bash
+bash /lfs/local/0/$USER/verify-node.sh
+```
+
+Only these need to exist beforehand: system `git` and `curl`, and
+`/dfs/user/$USER/.secrets/{wandb,huggingface,github}` (the one thing that is
+shared rather than node-local; nothing here creates it).
+
+Interactive extras, once per node:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
