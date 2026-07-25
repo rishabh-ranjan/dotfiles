@@ -21,9 +21,9 @@ set -x WANDB_CONSOLE "off"
 set -l dfs_home /dfs/user/ranjanr
 
 # One pixi install for the whole cluster: the binary and the global CLI tools
-# live on shared storage, so no node needs setting up. Project environments are
-# still node-local -- detached-environments = false in $PIXI_HOME/config.toml
-# keeps each env inside its project dir, and projects live on node-local disk.
+# live on shared storage, so no node needs setting up. Project environments stay
+# node-local -- detached-environments = true in $PIXI_HOME/config.toml puts them
+# under the pixi cache, which sits in the node-local $HOME.
 if test -d $dfs_home/.pixi
 	set -x PIXI_HOME $dfs_home/.pixi
 else
