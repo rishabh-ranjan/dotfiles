@@ -55,7 +55,7 @@
   "syntaxHighlightingDisabled": false,
   "terminalTitleFromRename": true,
   "alwaysThinkingEnabled": true,
-  "effortLevel": "low",
+  "effortLevel": "max",
   "fastModePerSessionOptIn": true,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
