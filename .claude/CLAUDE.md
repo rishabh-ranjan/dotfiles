@@ -1,7 +1,7 @@
 # Files and dependencies
 
 Use `/tmp` for anything that need not be pushed to github.
-Do not pollute my filesystem with any logs, scripts, outputs, etc.
+Do not pollute the filesystem with any logs, scripts, outputs, etc.
 Use pixi environments for dependencies.
 
 
@@ -26,5 +26,4 @@ and make sure to switch to the relevant branch/commit,
 caches will automatically use `/lfs/local/0/ranjanr/.cache`,
 pixi will automatically create environments in `/lfs/local/0/ranjanr/.pixi`,
 keep temporary files in `/tmp/ranjanr/<project_name>`.
-Only use `/dfs/user/ranjanr/<project_name>` for things that need to be shared.
-This does not necessarily include datasets, which can be kept node-local.
+Only use `/dfs/user/ranjanr/share/<project_name>` for data that needs to be shared.
