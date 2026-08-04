@@ -9,7 +9,7 @@
 # and for batch jobs alike (a slurm script with `#!/bin/bash -l` is a login
 # shell, so it lands here too). setup-node.sh is a few stat calls and no
 # network once the node is set up, so running it every time is free.
-if [[ $(uname) != Darwin ]]
+if [[ -d /lfs ]]
 then
 	LFS_HOME="/lfs/local/0/ranjanr"
 	if [[ -f $LFS_HOME/setup-node.sh ]]
