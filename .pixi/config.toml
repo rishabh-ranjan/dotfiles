@@ -1,2 +1,1 @@
-# do NOT add detached-environments = true
 run-post-link-scripts = "insecure"
