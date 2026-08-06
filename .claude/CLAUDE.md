@@ -27,3 +27,5 @@ caches will automatically use `/lfs/local/0/ranjanr/.cache`,
 pixi will automatically create environments in `/lfs/local/0/ranjanr/.pixi`,
 keep temporary files in `/tmp/ranjanr/<project_name>`.
 Only use `/dfs/user/ranjanr/share/<project_name>` for data that needs to be shared.
+Do NOT create any files or directories in `/dfs/user/ranjanr`
+or `/lfs/local/0/ranjanr` directly.
