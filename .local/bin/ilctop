@@ -583,7 +583,7 @@ def render(nodes, running, my, pending, cpus, width):
     # ---- my jobs -------------------------------------------------------------
     # One cell per job, same layout for CPU-only and GPU jobs: name, node,
     # unified per-job CPU usage/memory, then one block per GPU it holds.
-    sec_jobs = L = []
+    sec_cpus_mine, sec_gpus_mine = [], []
     if my or pending:
         # running jobs oldest-first, then the queue
         jobs = sorted(my, key=lambda j: (j["start"] or now, j["name"]))
@@ -597,6 +597,7 @@ def render(nodes, running, my, pending, cpus, width):
         # width of a single node name, used to prefix each GPU below its job
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
                       or [1])
+        triples = list(zip(jobs, labels, nodelbl))
         name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
         run_w = max([len(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
@@ -638,8 +639,8 @@ def render(nodes, running, my, pending, cpus, width):
 
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
-        L.append(paint("my jobs", 1))
-        for j, nm, nl in zip(jobs, labels, nodelbl):
+
+        def job_lines(L, j, nm, nl):
             live = j.get("live") or {}
             # live gpus carry their own node; fall back to the job's first node
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
@@ -662,8 +663,7 @@ def render(nodes, running, my, pending, cpus, width):
                 pack_cells(L, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
                            width, gap=3, indent="    ")
 
-        # ---- pending jobs: one line each, after everything that is running ----
-        for p in sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now)):
+        def pend_line(L, p):
             want = []
             if p["cnt"]:
                 want.append("%d×%s" % (p["cnt"] * max(1, p["nn"]), disp_type(p["type"])))
@@ -676,8 +676,25 @@ def render(nodes, running, my, pending, cpus, width):
                     name_w + excl_w),
                 pad(" ".join(want), want_w), fmt_eta(p["eta"], now)))
 
+        # cpu-only and gpu work get a section each; queued jobs follow the
+        # running ones inside whichever section they belong to
+        pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
+        for title, dest, mine, queued in (
+                ("my cpus", sec_cpus_mine, [x for x in triples if x[0]["gpu"] == 0],
+                 [p for p in pend if not p["cnt"]]),
+                ("my gpus", sec_gpus_mine, [x for x in triples if x[0]["gpu"] > 0],
+                 [p for p in pend if p["cnt"]])):
+            if not mine and not queued:
+                continue
+            dest.append(paint(title, 1))
+            for j, nm, nl in mine:
+                job_lines(dest, j, nm, nl)
+            for p in queued:
+                pend_line(dest, p)
+
     L = []
-    for sec in (sec_cpus_free, sec_users, sec_gpus_free, sec_jobs, sec_gpus):
+    for sec in (sec_cpus_free, sec_cpus_mine, sec_users,
+                sec_gpus_free, sec_gpus_mine, sec_gpus):
         if not sec:
             continue
         if L:
