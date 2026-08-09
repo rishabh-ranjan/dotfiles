@@ -663,9 +663,15 @@ def render(nodes, running, my, pending, cpus, width):
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
             L.append(("  %-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
                                            cpu_block(j))).rstrip())
-            # the job's GPUs go on their own indented line(s) below it
-            pack_cells(L, [gpu_block(short_node(gn), gp) for gn, gp in gps],
-                       width, gap=3, indent="    ")
+            # the job's GPUs go on their own indented line(s) below it,
+            # never mixing GPUs from different nodes in one row
+            gnodes = []
+            for gn, _ in gps:
+                if gn not in gnodes:
+                    gnodes.append(gn)
+            for gn in gnodes:
+                pack_cells(L, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
+                           width, gap=3, indent="    ")
 
     # ---- pending ----
     groups = {}
