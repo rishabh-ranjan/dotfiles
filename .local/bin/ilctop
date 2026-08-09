@@ -8,8 +8,8 @@ Three vertically-compact sections:
                   <c> in use; <c> is a letter identifying the owning user
                The glyph COLOUR encodes the holding job's QoS:
                   red = il-interactive   orange = il   grey = il-lo
-               Your own GPUs are bold. Nodes are packed into columns to
-               keep the map short.
+               Your own glyph is upper-case. Nodes are packed into columns
+               to keep the map short.
 
   2. MY JOBS   One row per running job (GPU and CPU-only alike, same layout):
                name (+ "(excl)" if it holds the node exclusively), node,
@@ -539,9 +539,8 @@ def render(nodes, running, my, pending, cpus, width):
         split = " ".join("%d×%s" % (bd[t], t) for t in sorted(
             bd, key=lambda t: (GPU_TYPE_ORDER.index(t) if t in GPU_TYPE_ORDER
                                else len(GPU_TYPE_ORDER), t)))
-        head = "%s=%-*s" % (chars[u], name_w, u)
-        leg.append((paint(head, 1) if u == ME else chars[u] + paint("=%-*s" % (name_w, u), 2))
-                   + " " + split)
+        # the upper-case glyph already marks me; no bolding needed
+        leg.append(chars[u] + paint("=%-*s" % (name_w, u), 2) + " " + split)
     if leg:
         L.append("")
         pack_cells(L, leg, width)
@@ -565,8 +564,7 @@ def render(nodes, running, my, pending, cpus, width):
             for _ in range(c):
                 if drawn >= cap:
                     break
-                codes = qos_codes(q) + ((1,) if u == ME else ())
-                g += paint(chars.get(u, "?"), *codes)
+                g += paint(chars.get(u, "?"), *qos_codes(q))
                 drawn += 1
         free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 196))
         g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
