@@ -604,23 +604,16 @@ def render(nodes, running, my, pending, cpus, width):
                                    "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024),
                                    "%3.0fW" % gp["pw"])
 
-        # trim the name column until the fixed part of a row fits the terminal
-        fixed = node_w + 2 + 21 + 3
-        name_w = max(6, min(name_w, width - fixed - 20))
-        rows, cells = [], []
+        # trim the name column until the job line fits the terminal
+        name_w = max(6, min(name_w, width - (node_w + 2 + 21)))
+        L.append("")
         for j, nm, nl in zip(jobs, labels, nodelbl):
             live = j.get("live") or {}
             gps = live.get("gpus") or ([None] * j["gpu"])
-            head = "%-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl, cpu_block(j))
-            blocks = [gpu_block(gp) for gp in gps]
-            rows.append((head, blocks))
-            cells.append((head + ("   " + "  ".join(blocks) if blocks else "")).rstrip())
-        L.append("")
-        if max(vlen(c) for c in cells) <= width:
-            pack_cells(L, cells, width)          # everything fits: pack in columns
-        else:
-            for head, blocks in rows:            # else one job per row, gpus wrapped
-                wrap_items(L, head + "   ", blocks, width)
+            L.append(("%-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
+                                         cpu_block(j))).rstrip())
+            # the job's GPUs go on their own indented line(s) below it
+            wrap_items(L, "  ", [gpu_block(gp) for gp in gps], width)
 
     # ---- pending ----
     groups = {}
