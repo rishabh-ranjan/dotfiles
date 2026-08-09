@@ -639,6 +639,8 @@ def render(nodes, running, my, pending, cpus, width):
                       or [1])
         name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
         qos_w = max([len(p["qos"]) for p in pending] or [0])
+        run_w = max([len(fmt_dur((now - j["start"]).total_seconds()))
+                     for j in jobs if j["start"]] or [1])
         want_w = max([len("%d×%s %dcpu %.0fG" % (p["cnt"] * max(1, p["nn"]),
                                                  disp_type(p["type"]), p["cpu"],
                                                  hum_gib(p["mem"] or 0) * max(1, p["nn"])))
@@ -684,9 +686,11 @@ def render(nodes, running, my, pending, cpus, width):
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
             # the name is bold; the exclusivity marker deliberately is not
             excl = " (exclusive)" if j["excl"] else ""
-            L.append(("  %s %*s  %s" % (pad(paint(shorten(nm, name_w), 1) + excl,
-                                            name_w + excl_w),
-                                        node_w, nl, cpu_block(j))).rstrip())
+            run_for = fmt_dur((now - j["start"]).total_seconds()) if j["start"] else "?"
+            L.append(("  %s %*s  %s  %s" % (pad(paint(shorten(nm, name_w), 1) + excl,
+                                                name_w + excl_w),
+                                            node_w, nl, cpu_block(j),
+                                            pad(paint(run_for, 2), run_w, right=True))).rstrip())
             # the job's GPUs go on their own indented line(s) below it,
             # never mixing GPUs from different nodes in one row
             gnodes = []
@@ -718,6 +722,20 @@ def render(nodes, running, my, pending, cpus, width):
             L.append("")
         L += sec
     return L
+
+
+def fmt_dur(secs):
+    """Compact elapsed time: 47m, 3h12m, 2d3h."""
+    if secs is None:
+        return "?"
+    m = int(secs // 60)
+    if m < 60:
+        return "%dm" % m
+    h, m = divmod(m, 60)
+    if h < 24:
+        return "%dh%02dm" % (h, m)
+    d, h = divmod(h, 24)
+    return "%dd%02dh" % (d, h)
 
 
 def fmt_eta(dt, now):
