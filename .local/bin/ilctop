@@ -644,18 +644,31 @@ def render(nodes, running, my, pending, cpus, width):
                 cm = pad(paint("?", DIM), cm_nw + cm_dw, right=True)
             return cu + " " + cm
 
+        # column widths from the values that actually occur, no reserved slack
+        allgp = [gp for j in jobs for _n, gp in ((j.get("live") or {}).get("gpus") or [])
+                 if gp]
+        gm_nw = max([len("%.0f" % (g["mu"] / 1024)) for g in allgp] or [1])
+        gm_dw = max([len("%.0fG" % (g["mt"] / 1024)) for g in allgp] or [2])
+        gp_w = max([len("%.0fW" % g["pw"]) for g in allgp] or [2])
+        gu_w = max([len("%.0f%%" % g["util"]) for g in allgp] or [2])
+
         def gpu_block(nl, gp):
             # the node name prefixes every GPU, which also visually separates them
             head = paint("%*s " % (gnode_w, nl), 2)
             if gp is None:
-                return head + paint("   ?   ?/   ?    ?", 2)
+                return head + pad(paint("?", DIM), gu_w, right=True) + " " \
+                    + pad(paint("?", DIM), gm_nw, right=True) + "/" \
+                    + pad(paint("?", DIM), gm_dw, right=True) + " " \
+                    + pad(paint("?", DIM), gp_w, right=True)
             # the memory denominator is right-aligned, so G and W sit one apart
             mem = pad(paint("%.0f" % (gp["mu"] / 1024),
                             *((RED,) if gp["mu"] / gp["mt"] > 0.9 else (CYAN,))),
-                      3, right=True) + "/" + pad("%.0fG" % (gp["mt"] / 1024), 5, right=True)
-            return "%s%s %s %4s" % (head,
-                                    paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
-                                    mem, "%3.0fW" % gp["pw"])
+                      gm_nw, right=True) + "/" \
+                + pad("%.0fG" % (gp["mt"] / 1024), gm_dw, right=True)
+            return "%s%s %s %s" % (head,
+                                   pad(paint("%.0f%%" % gp["util"],
+                                             *gutil_codes(gp["util"])), gu_w, right=True),
+                                   mem, pad("%.0fW" % gp["pw"], gp_w, right=True))
 
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
