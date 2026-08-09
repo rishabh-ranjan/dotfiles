@@ -77,12 +77,12 @@ ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 # Plain 16-colour SGR foregrounds, picked by hand: single-character glyphs need
 # dark, saturated inks, and every terminal (and `watch`) renders these the same.
 RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK, DIM = 31, 32, 33, 34, 35, 36, 30, 2
-# Each entry is a full SGR code tuple, so "grey" can be dim rather than a
-# 16-colour bright black that not every terminal has.
+# Only the dark half of the palette (30-37): the bright variants (90-97) and
+# the dim attribute both wash out, which is what makes glyphs hard to read.
 QOS_FG = {
     "il-interactive": (RED,),
     "il": (GREEN,),
-    "il-lo": (DIM,),         # grey: lowest priority, de-emphasised
+    "il-lo": (BLACK,),       # dark grey: lowest priority, de-emphasised
     "il-cpu-long": (CYAN,),
     "normal": (BLUE,),
     "dev": (MAGENTA,),
