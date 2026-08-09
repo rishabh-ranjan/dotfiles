@@ -575,8 +575,9 @@ def render(nodes, running, my, pending, cpus, width):
         L.append(paint("users", 1))
         pack_cells(L, leg, width, indent="  ")
 
-    # ---- gpu map: a subsection per gpu type, one node family per row block ----
+    # ---- gpu map, packed into columns ----
     label_w = max(len(short_node(n)) for n in nodes)
+    type_w = max(len(disp_type(nodes[n]["type"])) for n in nodes)
     glyph_w = max(nodes[n]["cap"] for n in nodes)
     nlist = sorted(nodes, key=lambda n: ((GPU_TYPE_ORDER.index(nodes[n]["type"])
               if nodes[n]["type"] in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER),) + natkey(n)))
@@ -598,28 +599,14 @@ def render(nodes, running, my, pending, cpus, width):
         free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 160))
         g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
         g += " " * (glyph_w - cap)
-        # the gpu type is the subsection header, so it is not repeated per node
-        return "%-*s %s" % (label_w, short_node(n), g)
+        return "%*s %s %s" % (label_w, short_node(n),
+                              paint("%-*s" % (type_w, disp_type(nd["type"])), 2), g)
 
     L.append("")
     ghead = paint("gpus", 1)                 # qos key rides on this header line
     key = " (qos: " + swatches + ")"
     L.append(ghead + (key if vlen(ghead) + vlen(key) <= width else ""))
-    types = []
-    for n in nlist:                          # keep types in gpu-order, families next
-        t = nodes[n]["type"]
-        if t not in types:
-            types.append(t)
-    for t in types:
-        L.append("  " + disp_type(t))
-        tnodes = [n for n in nlist if nodes[n]["type"] == t]
-        fams = []
-        for n in tnodes:
-            if natkey(n)[0] not in fams:
-                fams.append(natkey(n)[0])
-        for fam in fams:                     # never mix families in one row
-            pack_cells(L, [node_cell(n) for n in tnodes if natkey(n)[0] == fam],
-                       width, indent="    ")
+    pack_cells(L, [node_cell(n) for n in nlist], width, indent="  ")
 
     # ---- my jobs -------------------------------------------------------------
     # One cell per job, same layout for CPU-only and GPU jobs: name, node,
