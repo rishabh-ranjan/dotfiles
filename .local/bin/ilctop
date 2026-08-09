@@ -8,8 +8,8 @@ Three vertically-compact sections:
                   <c> in use; <c> is a letter identifying the owning user
                The glyph COLOUR encodes the holding job's QoS:
                   red = il-interactive   orange = il   grey = il-lo
-               Your own glyph is upper-case. Nodes are packed into columns
-               to keep the map short.
+               Your own glyph is upper-case and bold. Nodes are packed into
+               columns to keep the map short.
 
   2. MY JOBS   One row per running job (GPU and CPU-only alike, same layout):
                name (+ "(excl)" if it holds the node exclusively), node,
@@ -87,6 +87,14 @@ QOS_DEFAULT_FG = 250
 GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
 NODE_ABBREV = {"ampere": "a", "turing": "t", "hyperturing": "ht",
                "hyperion": "h", "blackwell": "bw"}
+# SLURM gres names are lower-case identifiers; display them the way NVIDIA
+# spells them (same string lengths, so column widths are unaffected).
+GPU_TYPE_DISP = {"a100": "A100", "b200": "B200", "rtx8000": "RTX8000",
+                 "2080ti": "2080Ti", "titanxp": "TitanXp"}
+
+
+def disp_type(t):
+    return GPU_TYPE_DISP.get(t, t)
 
 
 def term_width():
@@ -504,7 +512,7 @@ def render(nodes, running, my, pending, cpus, width):
         u = used_type.get(t, 0)
         tot_all += total_type[t]
         used_all += u
-        rows.append((t, total_type[t] - u, total_type[t]))
+        rows.append((disp_type(t), total_type[t] - u, total_type[t]))
     L.append("")
     L.append("free gpus %d/%d" % (tot_all - used_all, tot_all))
     pack_cells(L, free_cells(rows), width, gap=2, indent="  ")
@@ -536,18 +544,19 @@ def render(nodes, running, my, pending, cpus, width):
     for u in leg_order:
         bd = user_type.get(u, {})
         # always the per-type breakdown, never a bare total
-        split = " ".join("%d×%s" % (bd[t], t) for t in sorted(
+        split = " ".join("%d×%s" % (bd[t], disp_type(t)) for t in sorted(
             bd, key=lambda t: (GPU_TYPE_ORDER.index(t) if t in GPU_TYPE_ORDER
                                else len(GPU_TYPE_ORDER), t)))
-        # the upper-case glyph already marks me; no bolding needed
-        leg.append(chars[u] + paint("=%-*s" % (name_w, u), 2) + " " + split)
+        # only the glyph is bold for me; the name stays dim like everyone else's
+        leg.append(paint(chars[u], 1) if u == ME else chars[u])
+        leg[-1] += paint("=%-*s" % (name_w, u), 2) + " " + split
     if leg:
         L.append("")
         pack_cells(L, leg, width)
 
     # ---- gpu map, packed into columns (one node family per row block) ----
     label_w = max(len(short_node(n)) for n in nodes)
-    type_w = max(len(nodes[n]["type"]) for n in nodes)
+    type_w = max(len(disp_type(nodes[n]["type"])) for n in nodes)
     glyph_w = max(nodes[n]["cap"] for n in nodes)
     nlist = sorted(nodes, key=lambda n: ((GPU_TYPE_ORDER.index(nodes[n]["type"])
               if nodes[n]["type"] in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER),) + natkey(n)))
@@ -564,13 +573,13 @@ def render(nodes, running, my, pending, cpus, width):
             for _ in range(c):
                 if drawn >= cap:
                     break
-                g += paint(chars.get(u, "?"), *qos_codes(q))
+                g += paint(chars.get(u, "?"), *(qos_codes(q) + ((1,) if u == ME else ())))
                 drawn += 1
         free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 196))
         g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
         g += " " * (glyph_w - cap)
         return "%-*s %s %s" % (label_w, short_node(n),
-                               paint("%-*s" % (type_w, nd["type"]), 2), g)
+                               paint("%-*s" % (type_w, disp_type(nd["type"])), 2), g)
 
     L.append("")
     fams = []
@@ -648,7 +657,7 @@ def render(nodes, running, my, pending, cpus, width):
                          key=lambda kv: (kv[1]["eta"] is None, kv[1]["eta"] or now))
         items = []
         for (gtype, cnt, qos), gr in ordered:
-            label = "cpu" if gtype == "cpu" else "%d×%s" % (cnt, gtype)
+            label = "cpu" if gtype == "cpu" else "%d×%s" % (cnt, disp_type(gtype))
             star = paint("*", 1) if gr["mine"] else ""
             eta = fmt_eta(gr["eta"], now)
             items.append("%s× %s %s%s → %s"
