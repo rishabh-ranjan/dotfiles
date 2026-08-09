@@ -665,8 +665,8 @@ def render(nodes, running, my, pending, cpus, width):
             live = j.get("live") or {}
             # live gpus carry their own node; fall back to the job's first node
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
-            L.append(("  %-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
-                                           cpu_block(j))).rstrip())
+            L.append(("  %s %-*s  %s" % (pad(paint(shorten(nm, name_w), 1), name_w),
+                                         node_w, nl, cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it,
             # never mixing GPUs from different nodes in one row
             gnodes = []
