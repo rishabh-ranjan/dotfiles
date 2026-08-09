@@ -398,13 +398,43 @@ def gutil_codes(u):
     return (38, 5, 40) if u >= 70 else (38, 5, 220) if u >= 30 else (38, 5, 203)
 
 
+def vtrunc(s, n):
+    """Truncate to visible width n, keeping ANSI sequences balanced."""
+    if vlen(s) <= n:
+        return s
+    out, seen = [], 0
+    for tok in re.split(r"(\033\[[0-9;]*m)", s):
+        if tok.startswith("\033"):
+            out.append(tok)
+        elif seen < n:
+            out.append(tok[:n - seen])
+            seen += min(len(tok), n - seen)
+    return "".join(out) + ("\033[0m" if USE_COLOR else "")
+
+
+def wrap_items(L, prefix, items, width, gap=2):
+    """Emit `prefix` + items, wrapping to continuation lines aligned under it."""
+    ind = " " * vlen(prefix)
+    line, first = prefix, True
+    for it in items:
+        add = ("" if first else " " * gap) + it
+        if not first and vlen(line) + vlen(add) > width:
+            L.append(line.rstrip())
+            line, add = ind, it
+        line += add
+        first = False
+    if line.strip():
+        L.append(line.rstrip())
+
+
 def pack_cells(L, cells, width, gap=3, indent=""):
-    """Lay out equal-width cells in as many columns as `width` allows."""
+    """Lay out equal-width cells in as many columns as fit, never wrapping."""
     if not cells:
         return
-    cw = max(vlen(c) for c in cells)
-    cells = [c + " " * (cw - vlen(c)) for c in cells]
-    ncols = max(1, (width - len(indent) + gap) // (cw + gap))
+    avail = max(1, width - len(indent))
+    cw = min(max(vlen(c) for c in cells), avail)
+    cells = [pad(vtrunc(c, cw), cw) for c in cells]
+    ncols = max(1, (avail + gap) // (cw + gap))
     for i in range(0, len(cells), ncols):
         L.append((indent + (" " * gap).join(cells[i:i + ncols])).rstrip())
 
@@ -438,8 +468,9 @@ def render(nodes, running, my, pending, cpus, width):
     swatches = "  ".join(
         paint(q, *qos_codes(q)) for q in ["il-interactive", "il", "il-lo"]
     )
-    L.append(paint("ilctop", 1) + paint("  " + now.strftime("%a %d %b %H:%M:%S"), 2)
-             + ("   qos: " + swatches if swatches else ""))
+    head = paint("ilctop", 1) + paint("  " + now.strftime("%a %d %b %H:%M:%S"), 2)
+    L.append(head + ("   qos: " + swatches
+                     if vlen(head) + 8 + vlen(swatches) <= width else ""))
 
     # ---- totals per gpu type ----
     total_type = {}
@@ -459,8 +490,8 @@ def render(nodes, running, my, pending, cpus, width):
         used_all += u
         parts.append(free_cell(t, total_type[t] - u, total_type[t]))
     L.append("")
-    L.append("free gpu " + paint("%d/%d" % (tot_all - used_all, tot_all), 1)
-             + "   " + "  ".join(parts))
+    wrap_items(L, "free gpu " + pad(paint("%d/%d" % (tot_all - used_all, tot_all), 1), 12)
+               + " ", parts, width)
 
     # ---- free cpus, broken down by node family ----
     fam_idle, fam_tot = {}, {}
@@ -469,10 +500,10 @@ def render(nodes, running, my, pending, cpus, width):
         fam_idle[fam] = fam_idle.get(fam, 0) + c["idle"]
         fam_tot[fam] = fam_tot.get(fam, 0) + c["total"]
     if fam_tot:
-        cparts = [free_cell(NODE_ABBREV.get(f, f), fam_idle[f], fam_tot[f])
+        cparts = [free_cell(f, fam_idle[f], fam_tot[f])
                   for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
-        L.append("free cpu " + paint("%d/%d" % (sum(fam_idle.values()),
-                 sum(fam_tot.values())), 1) + "   " + "  ".join(cparts))
+        wrap_items(L, "free cpu " + pad(paint("%d/%d" % (sum(fam_idle.values()),
+                   sum(fam_tot.values())), 1), 12) + " ", cparts, width)
 
     # ---- user legend with per-user GPU breakdown (me first, then most-used) ----
     user_gpu, user_type = {}, {}
@@ -573,15 +604,23 @@ def render(nodes, running, my, pending, cpus, width):
                                    "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024),
                                    "%3.0fW" % gp["pw"])
 
-        cells = []
+        # trim the name column until the fixed part of a row fits the terminal
+        fixed = node_w + 2 + 21 + 3
+        name_w = max(6, min(name_w, width - fixed - 20))
+        rows, cells = [], []
         for j, nm, nl in zip(jobs, labels, nodelbl):
             live = j.get("live") or {}
             gps = live.get("gpus") or ([None] * j["gpu"])
-            g = "  ".join(gpu_block(gp) for gp in gps[:max(j["gpu"], len(gps))])
-            cells.append(("%-*s %-*s  %s%s" % (name_w, nm, node_w, nl, cpu_block(j),
-                                               "   " + g if g else "")).rstrip())
+            head = "%-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl, cpu_block(j))
+            blocks = [gpu_block(gp) for gp in gps]
+            rows.append((head, blocks))
+            cells.append((head + ("   " + "  ".join(blocks) if blocks else "")).rstrip())
         L.append("")
-        pack_cells(L, cells, width)
+        if max(vlen(c) for c in cells) <= width:
+            pack_cells(L, cells, width)          # everything fits: pack in columns
+        else:
+            for head, blocks in rows:            # else one job per row, gpus wrapped
+                wrap_items(L, head + "   ", blocks, width)
 
     # ---- pending ----
     groups = {}
@@ -605,17 +644,7 @@ def render(nodes, running, my, pending, cpus, width):
             items.append("%s× %s %s%s → %s"
                          % (paint(str(gr["n"]), 1), label,
                             paint(qos, *qos_codes(qos)), star, eta))
-        # wrap items to width
-        line, ll = "", 0
-        for it in items:
-            w = vlen(it) + 3
-            if ll + w > width and line.strip():
-                L.append(line)
-                line, ll = "", 0
-            line += it + "   "
-            ll += w
-        if line.strip():
-            L.append(line)
+        wrap_items(L, "", items, width, gap=3)
 
     return L
 
