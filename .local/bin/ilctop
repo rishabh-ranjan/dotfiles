@@ -684,32 +684,42 @@ def render(nodes, running, my, pending, cpus, width):
             for gn, _ in gps:
                 if gn not in gnodes:
                     gnodes.append(gn)
-            head = head_line(j, nm, nl, "", plain=True)
-            lead = pad(head, 2 + name_w + excl_w + 2)   # only the first row is inset
+            head = head_line(j, nm, nl, "", plain=True)[2:]   # own indent below
             allc = [gpu_block(short_node(n), gp) for n, gp in gps]
             if not allc:
-                L.append(head)
+                L.append(indent + head)
                 return
+            # One grid for the whole job: every row uses the same column stops,
+            # and the name simply occupies as many leading columns as it needs.
+            indent, gap = "    ", 3
             cw = max(vlen(c) for c in allc)
-
-            def layout(avail):
-                """Column count and gaps that justify a full row into `avail`."""
-                k = max(1, (avail + 3) // (cw + 3))
-                slack = avail - k * cw - 3 * (k - 1)
-                return k, [3 + slack // (k - 1) + (1 if i < slack % (k - 1) else 0)
-                           for i in range(k - 1)] if k > 1 else (k, [])
-
-            k1, gaps1 = layout(width - vlen(lead))
-            k2, gaps2 = layout(width - 4)
+            avail = width - len(indent)
+            k = max(1, (avail + gap) // (cw + gap))
+            slack = avail - k * cw - gap * (k - 1)
+            gaps = [gap + slack // (k - 1) + (1 if i < slack % (k - 1) else 0)
+                    for i in range(k - 1)] if k > 1 else []
+            stops = [0]
+            for i in range(k - 1):
+                stops.append(stops[-1] + cw + gaps[i])
+            # leading columns swallowed by the name (at least one)
+            lead_n = min(k - 1, max(1, next((i for i, x in enumerate(stops)
+                                             if x >= vlen(head) + 2), k - 1)))
             first = True
             for gn in gnodes:
                 cells = [gpu_block(short_node(n), gp) for n, gp in gps if n == gn]
+                new_node = True
                 while cells:
-                    prefix, k, gaps = (lead, k1, gaps1) if first else ("    ", k2, gaps2)
-                    row, cells = cells[:k], cells[k:]
-                    L.append((prefix + "".join(pad(c, cw)
-                              + " " * (gaps[i] if i < len(gaps) else 0)
-                              for i, c in enumerate(row))).rstrip())
+                    # the name inset on the very first row; every further node
+                    # starts one cell in, so its block is visually detached
+                    start = lead_n if first else (1 if new_node and k > 1 else 0)
+                    row, cells = cells[:k - start], cells[k - start:]
+                    line = indent + (pad(head, stops[start]) if first
+                                     else " " * stops[start])
+                    new_node = False
+                    for i, c in enumerate(row):
+                        col = start + i
+                        line += pad(c, cw) + " " * (gaps[col] if col < len(gaps) else 0)
+                    L.append(line.rstrip())
                     first = False
 
         def pend_line(L, p, want):
