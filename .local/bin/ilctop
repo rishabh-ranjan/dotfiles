@@ -11,9 +11,10 @@ Three vertically-compact sections:
                Your own GPUs are bold. Nodes are packed into columns to
                keep the map short.
 
-  2. MY JOBS   For each of your running GPU jobs: live per-GPU utilisation,
-               memory (used/total) and power, plus per-job CPU utilisation
-               and memory (used/allocated) aggregated over all its cores.
+  2. MY JOBS   One row per running job (GPU and CPU-only alike, same layout):
+               name (+ "(excl)" if it holds the node exclusively), node,
+               unified per-job CPU usage (used/allocated cores) and memory,
+               then live utilisation / memory / power for each GPU it holds.
 
   3. PENDING   Queued jobs grouped by (gpu type, qos) with the count and
                SLURM's estimated start time (ETA).
@@ -21,6 +22,10 @@ Three vertically-compact sections:
 Live numbers are read with a short `srun --overlap` into each of your jobs
 (nvidia-smi + cgroup-v2). The kernel only exposes your own GPUs to you, so
 everyone else is shown from the SLURM allocation view.
+
+Under `watch ilctop` the output keeps its colour and formatting: we detect the
+watch ancestor (stdout is a pipe there) and fold 256-colour codes down to the
+16-colour set that watch forwards.
 """
 
 import argparse
@@ -39,7 +44,34 @@ from concurrent.futures import ThreadPoolExecutor
 ENV = {k: v for k, v in os.environ.items() if not k.startswith("SLURM")}
 ME = os.environ.get("USER") or "?"
 
-USE_COLOR = (sys.stdout.isatty() or "FORCE_COLOR" in os.environ) and "NO_COLOR" not in os.environ
+def _under_watch():
+    """True if an ancestor process is `watch` (which pipes us, hiding the tty).
+
+    procps `watch` forwards ANSI sequences from the command's stdout, so we can
+    keep colour/formatting identical to a direct run -- we just have to notice
+    that we are being watched, since stdout is a pipe.
+    """
+    pid = os.getppid()
+    for _ in range(4):
+        try:
+            comm = open("/proc/%d/comm" % pid).read().strip()
+            stat = open("/proc/%d/stat" % pid).read()
+        except OSError:
+            return False
+        if comm == "watch":
+            return True
+        try:
+            pid = int(stat.rsplit(")", 1)[1].split()[1])
+        except (IndexError, ValueError):
+            return False
+        if pid <= 1:
+            return False
+    return False
+
+
+WATCH_MODE = _under_watch()
+USE_COLOR = ((sys.stdout.isatty() or "FORCE_COLOR" in os.environ or WATCH_MODE)
+             and "NO_COLOR" not in os.environ)
 ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
 # QoS -> 256-colour foreground (priority high->low: red, orange, grey)
@@ -52,17 +84,79 @@ QOS_FG = {
     "dev": 141,
 }
 QOS_DEFAULT_FG = 250
-GPU_TYPE_ORDER = ["a100", "rtx8000", "2080ti", "titanxp"]
+GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
+NODE_ABBREV = {"ampere": "a", "turing": "t", "hyperturing": "ht",
+               "hyperion": "h", "blackwell": "bw"}
+
+
+def term_width():
+    """Terminal width, also when stdout is a pipe (e.g. under `watch`)."""
+    if os.environ.get("COLUMNS", "").isdigit():
+        return int(os.environ["COLUMNS"])
+    if sys.stdout.isatty():
+        return shutil.get_terminal_size((120, 40)).columns
+    try:
+        with open("/dev/tty") as t:
+            return os.get_terminal_size(t.fileno()).columns
+    except Exception:
+        return shutil.get_terminal_size((120, 40)).columns
+
+
+def _xterm_rgb(i):
+    if i < 16:
+        return None
+    if i >= 232:
+        v = 8 + 10 * (i - 232)
+        return (v, v, v)
+    i -= 16
+    lv = [0, 95, 135, 175, 215, 255]
+    return (lv[i // 36], lv[(i % 36) // 6], lv[i % 6])
+
+
+def _basic(i):
+    """Nearest 16-colour SGR code for a 256-colour index (`watch` drops 38;5;N)."""
+    rgb = _xterm_rgb(i)
+    if rgb is None:
+        return 30 + (i % 8) + (60 if i >= 8 else 0)
+    best, bestd = 37, None
+    for idx, ref in enumerate([(0, 0, 0), (170, 0, 0), (0, 170, 0), (170, 85, 0),
+                               (0, 0, 170), (170, 0, 170), (0, 170, 170), (170, 170, 170),
+                               (85, 85, 85), (255, 85, 85), (85, 255, 85), (255, 255, 85),
+                               (85, 85, 255), (255, 85, 255), (85, 255, 255), (255, 255, 255)]):
+        d = sum((a - b) ** 2 for a, b in zip(rgb, ref))
+        if bestd is None or d < bestd:
+            best, bestd = idx, d
+    return (30 + best) if best < 8 else (90 + best - 8)
+
+
+def _downgrade(codes):
+    out, i = [], 0
+    while i < len(codes):
+        if codes[i] == 38 and i + 2 < len(codes) and codes[i + 1] == 5:
+            out.append(_basic(codes[i + 2]))
+            i += 3
+        else:
+            out.append(codes[i])
+            i += 1
+    return out
 
 
 def paint(s, *codes):
     if not USE_COLOR or not codes:
         return s
+    if WATCH_MODE:
+        codes = _downgrade(codes)
     return "\033[" + ";".join(str(c) for c in codes) + "m" + s + "\033[0m"
 
 
 def vlen(s):
     return len(ANSI_RE.sub("", s))
+
+
+def pad(s, n, right=False):
+    """Pad to visible width n, ignoring ANSI sequences."""
+    fill = " " * max(0, n - vlen(s))
+    return (fill + s) if right else (s + fill)
 
 
 def qos_codes(q):
@@ -103,8 +197,7 @@ def short_node(n):
     if not m:
         return n
     a, num = m.group(1), m.group(2)
-    ab = {"ampere": "a", "turing": "t", "hyperturing": "ht",
-          "hyperion": "hn"}.get(a, a[:2])
+    ab = NODE_ABBREV.get(a, a[:2])
     return ab + num
 
 
@@ -127,6 +220,24 @@ def get_nodes():
         if gcnt:
             nodes[name] = dict(type=gtype, cap=gcnt, state=state)
     return nodes
+
+
+def get_cpus():
+    """name -> {alloc, idle, total} for every node (GPU and CPU-only alike)."""
+    _, out = run(["sinfo", "-N", "-h", "-o", "%N|%C"])
+    cpus = {}
+    for line in out.splitlines():
+        p = line.split("|")
+        if len(p) < 2 or p[0] in cpus:
+            continue
+        f = p[1].split("/")
+        if len(f) < 4:
+            continue
+        try:
+            cpus[p[0]] = dict(alloc=int(f[0]), idle=int(f[1]), total=int(f[3]))
+        except ValueError:
+            pass
+    return cpus
 
 
 _NLCACHE = {}
@@ -163,11 +274,11 @@ def get_my_jobs():
     # Name queried LAST: job names can contain '|' (our delimiter); trailing
     # fields absorb the overflow instead of misaligning earlier columns.
     _, out = run(["squeue", "-h", "-u", ME, "-t", "R", "-O",
-                  "JobID:|,QOS:|,NodeList:|,tres-alloc:|,Name:|"])
+                  "JobID:|,QOS:|,NodeList:|,tres-alloc:|,OverSubscribe:|,Name:|"])
     jobs = []
     for line in out.splitlines():
         f = line.split("|")
-        if len(f) < 5:
+        if len(f) < 6:
             continue
         tres = f[3]
         g = re.search(r"gres/gpu=(\d+)", tres)
@@ -179,7 +290,8 @@ def get_my_jobs():
             gpu=int(g.group(1)) if g else 0,
             cpu=int(cpu.group(1)) if cpu else 0,
             mem=parse_mem(mem.group(1)) if mem else None,
-            name="|".join(f[4:]).strip(),
+            excl=f[4].strip().upper() not in ("OK", "YES", ""),
+            name="|".join(f[5:]).strip(),
         ))
     return jobs
 
@@ -260,8 +372,10 @@ def assign_chars(users):
     order = ([ME] if ME in users else []) + sorted(u for u in users if u != ME)
     chars, used = {}, set()
     for u in order:
-        cand = [u[0].lower(), u[0].upper()] + [c.lower() for c in u[1:]]
-        cand += list("0123456789@#$%&+=")
+        if u == ME:  # my own glyph is upper-case, everyone else stays lower-case
+            cand = [c.upper() for c in u] + list("@#$%&+=")
+        else:
+            cand = [c.lower() for c in u] + list("0123456789@#$%&+=")
         for ch in cand:
             if ch not in used:
                 chars[u], _ = ch, used.add(ch)
@@ -284,7 +398,18 @@ def gutil_codes(u):
     return (38, 5, 40) if u >= 70 else (38, 5, 220) if u >= 30 else (38, 5, 203)
 
 
-def render(nodes, running, my, pending, width):
+def pack_cells(L, cells, width, gap=3, indent=""):
+    """Lay out equal-width cells in as many columns as `width` allows."""
+    if not cells:
+        return
+    cw = max(vlen(c) for c in cells)
+    cells = [c + " " * (cw - vlen(c)) for c in cells]
+    ncols = max(1, (width - len(indent) + gap) // (cw + gap))
+    for i in range(0, len(cells), ncols):
+        L.append((indent + (" " * gap).join(cells[i:i + ncols])).rstrip())
+
+
+def render(nodes, running, my, pending, cpus, width):
     L = []
 
     # attribute running GPUs to (node, user, qos)
@@ -322,19 +447,34 @@ def render(nodes, running, my, pending, width):
         total_type[nodes[n]["type"]] = total_type.get(nodes[n]["type"], 0) + nodes[n]["cap"]
     tt = sorted(total_type, key=lambda t: (GPU_TYPE_ORDER.index(t)
                 if t in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER), t))
+    def free_cell(label, free, total):
+        col = 45 if free > 0 else 203       # cyan when something is available
+        return "%s %s/%d" % (paint(label, 2), paint(str(free), 38, 5, col), total)
+
     parts = []
     tot_all = used_all = 0
     for t in tt:
         u = used_type.get(t, 0)
         tot_all += total_type[t]
         used_all += u
-        free = total_type[t] - u
-        col = 40 if free > 0 else 203
-        parts.append("%s %s/%d" % (paint(t, 2), paint(str(free), 38, 5, col), total_type[t]))
-    L.append("  free " + paint("%d/%d" % (tot_all - used_all, tot_all), 1)
+        parts.append(free_cell(t, total_type[t] - u, total_type[t]))
+    L.append("")
+    L.append("free gpu " + paint("%d/%d" % (tot_all - used_all, tot_all), 1)
              + "   " + "  ".join(parts))
 
-    # ---- user legend with per-user GPU totals (me first, then most-used) ----
+    # ---- free cpus, broken down by node family ----
+    fam_idle, fam_tot = {}, {}
+    for n, c in cpus.items():
+        fam = natkey(n)[0]
+        fam_idle[fam] = fam_idle.get(fam, 0) + c["idle"]
+        fam_tot[fam] = fam_tot.get(fam, 0) + c["total"]
+    if fam_tot:
+        cparts = [free_cell(NODE_ABBREV.get(f, f), fam_idle[f], fam_tot[f])
+                  for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
+        L.append("free cpu " + paint("%d/%d" % (sum(fam_idle.values()),
+                 sum(fam_tot.values())), 1) + "   " + "  ".join(cparts))
+
+    # ---- user legend with per-user GPU breakdown (me first, then most-used) ----
     user_gpu, user_type = {}, {}
     for nd in counts:
         t = nodes[nd]["type"]
@@ -344,29 +484,29 @@ def render(nodes, running, my, pending, width):
             ut[t] = ut.get(t, 0) + n
     leg_order = ([ME] if ME in user_gpu else []) + sorted(
         (u for u in order if u != ME), key=lambda u: (-user_gpu.get(u, 0), u))
+    name_w = max([len(u) for u in leg_order] or [0])
     leg = []
     for u in leg_order:
-        n = user_gpu.get(u, 0)
         bd = user_type.get(u, {})
-        suffix = ""
-        if len(bd) > 1:  # spans >1 gpu type: show the split
-            suffix = paint(" (" + " ".join("%d×%s" % (bd[t], t)
-                     for t in sorted(bd, key=lambda t: -bd[t])) + ")", 2)
-        if u == ME:
-            leg.append(paint("%s=%s* %d" % (chars[u], u, n), 1) + suffix)
-        else:
-            leg.append("%s%s %d%s" % (chars[u], paint("=" + u, 2), n, suffix))
+        # always the per-type breakdown, never a bare total
+        split = " ".join("%d×%s" % (bd[t], t) for t in sorted(
+            bd, key=lambda t: (GPU_TYPE_ORDER.index(t) if t in GPU_TYPE_ORDER
+                               else len(GPU_TYPE_ORDER), t)))
+        head = "%s=%-*s" % (chars[u], name_w, u)
+        leg.append((paint(head, 1) if u == ME else chars[u] + paint("=%-*s" % (name_w, u), 2))
+                   + " " + split)
     if leg:
-        L.append("  " + "  ".join(leg))
+        L.append("")
+        pack_cells(L, leg, width)
 
-    # ---- gpu map, packed into columns ----
-    label_w = max(len(n) for n in nodes)
+    # ---- gpu map, packed into columns (one node family per row block) ----
+    label_w = max(len(short_node(n)) for n in nodes)
     type_w = max(len(nodes[n]["type"]) for n in nodes)
     glyph_w = max(nodes[n]["cap"] for n in nodes)
     nlist = sorted(nodes, key=lambda n: ((GPU_TYPE_ORDER.index(nodes[n]["type"])
               if nodes[n]["type"] in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER),) + natkey(n)))
-    cells = []
-    for n in nlist:
+
+    def node_cell(n):
         nd = nodes[n]
         cap = nd["cap"]
         avail = not any(x in nd["state"] for x in
@@ -384,96 +524,64 @@ def render(nodes, running, my, pending, width):
         free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 196))
         g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
         g += " " * (glyph_w - cap)
-        cell = "%-*s %s %s" % (label_w, n, paint("%-*s" % (type_w, nd["type"]), 2), g)
-        cells.append(cell)
-    cellw = label_w + 1 + type_w + 1 + glyph_w
-    gap = 3
-    ncols = max(1, (width + gap) // (cellw + gap))
-    for i in range(0, len(cells), ncols):
-        L.append("  " + (" " * gap).join(cells[i:i + ncols]))
-
-    # ---- my jobs: per-GPU cells, sharded sweeps collapsed into groups -------
-    # Per-GPU stats (util/mem/power) are shown for every GPU; CPU stats are
-    # per-job (one job == one cell). Jobs whose names differ only by a trailing
-    # numeric shard index are folded into one group with packed cells; distinct
-    # experiments stay on their own line.
-    type_of = {n: nodes[n]["type"] for n in nodes}
-    cpu_jobs = [j for j in my if j["gpu"] == 0]
-    entries = []
-    for j in my:
-        if j["gpu"] <= 0:
-            continue
-        live = j.get("live") or {}
-        dname = j["name"].rstrip("|")
-        gkey = re.sub(r"[|_\-]\d+$", "", dname) or dname
-        for gp in (live.get("gpus") or [None]):
-            entries.append(dict(gkey=gkey, dname=dname, node=j["node"],
-                                type=type_of.get(j["node"], "?"), cpu=j["cpu"],
-                                mem=j["mem"], cores=live.get("cores"),
-                                anon=live.get("anon"), mmax=live.get("mmax"), gp=gp))
+        return "%-*s %s %s" % (label_w, short_node(n),
+                               paint("%-*s" % (type_w, nd["type"]), 2), g)
 
     L.append("")
-    extra = ""
-    if cpu_jobs:
-        extra = paint("  +%d cpu-only (%dc, %s)" % (len(cpu_jobs),
-                      sum(j["cpu"] for j in cpu_jobs),
-                      fmt_g(hum_gib(sum(j["mem"] or 0 for j in cpu_jobs)) or 0)), 2)
-    L.append(paint("my jobs", 1) + paint(" · %d gpu" % len(entries), 2) + extra
-             + paint("    [util · gmem · pwr · cpu-cores · cpu-mem]", 2))
+    fams = []
+    for n in nlist:                          # keep families in first-seen order
+        fam = natkey(n)[0]
+        if fam not in fams:
+            fams.append(fam)
+    for fam in fams:                         # never mix families in one row
+        pack_cells(L, [node_cell(n) for n in nlist if natkey(n)[0] == fam], width)
 
-    def metrics(e):
-        gp = e["gp"]
-        if gp:
-            gu = paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"]))
-            gm = "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024)
-            pw = "%3.0fW" % gp["pw"]
-        else:
-            gu, gm, pw = paint("  ?", 2), paint("    ?", 2), paint("  ?", 2)
-        cu = ("%4.1fc" % e["cores"]) if e["cores"] is not None else paint("   ?c", 2)
-        alloc = e["mmax"] if (e["mmax"] and e["mmax"] < 2 ** 62) else e["mem"]
-        if e["anon"] is not None and alloc:
-            cm = "%.0f/%.0fG" % (hum_gib(e["anon"]), hum_gib(alloc))
-            if e["anon"] / alloc > 0.9:
-                cm = paint(cm, 38, 5, 203)
-        else:
-            cm = paint("?", 2)
-        return "%s %7s %4s  %5s %8s" % (gu, gm, pw, cu, cm)
+    # ---- my jobs -------------------------------------------------------------
+    # One cell per job, same layout for CPU-only and GPU jobs: name, node,
+    # unified per-job CPU usage/memory, then one block per GPU it holds.
+    if my:
+        jobs = sorted(my, key=lambda j: (natkey(j["node"]), j["name"]))
+        labels, nodelbl = [], []
+        for j in jobs:
+            nm = shorten(j["name"].rstrip("|"), 30)
+            labels.append(nm + (" (excl)" if j["excl"] else ""))
+            nodelbl.append(short_node(j["node"]))
+        name_w = max(len(x) for x in labels)
+        node_w = max(len(x) for x in nodelbl)
 
-    def pack(cells, indent):
-        cw = max(vlen(c) for c in cells)
-        cells = [c + " " * (cw - vlen(c)) for c in cells]
-        k = max(1, (width - len(indent)) // (cw + 2))
-        for i in range(0, len(cells), k):
-            L.append(indent + "  ".join(cells[i:i + k]))
+        def cpu_block(j):
+            live = j.get("live") or {}
+            cores = live.get("cores")
+            cu = ("%.1f/%dcpu" % (cores, j["cpu"])) if cores is not None \
+                else paint("?/%dcpu" % j["cpu"], 2)
+            alloc = live.get("mmax") if (live.get("mmax") and live["mmax"] < 2 ** 62) \
+                else j["mem"]
+            if live.get("anon") is not None and alloc:
+                cm = "%.0f/%.0fG" % (hum_gib(live["anon"]), hum_gib(alloc))
+                if live["anon"] / alloc > 0.9:
+                    cm = paint(cm, 38, 5, 203)
+            elif j["mem"]:
+                cm = paint("?/%.0fG" % hum_gib(j["mem"]), 2)
+            else:
+                cm = paint("?", 2)
+            return pad(cu, 11) + " " + pad(cm, 9, right=True)
 
-    groups = {}
-    for e in entries:
-        groups.setdefault(e["gkey"], []).append(e)
-    multi, singles = [], []
-    for gk in sorted(groups, key=lambda k: (natkey(groups[k][0]["node"]), k)):
-        es = groups[gk]
-        for e in es:
-            e["lbl"] = e["dname"][len(gk):].strip("|_-")
-        (multi if len(es) > 1 else singles).append((gk, es))
+        def gpu_block(gp):
+            if gp is None:
+                return paint("   ?       ?    ?", 2)
+            return "%s %7s %4s" % (paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
+                                   "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024),
+                                   "%3.0fW" % gp["pw"])
 
-    # sharded sweeps: aggregate header + packed per-GPU cells
-    for gk, es in multi:
-        utils = [e["gp"]["util"] for e in es if e["gp"]]
-        agg = ""
-        if utils:
-            agg = "  util %.0f–%.0f~%.0f  %.0fW" % (
-                min(utils), max(utils), sum(utils) / len(utils),
-                sum(e["gp"]["pw"] for e in es if e["gp"]))
-        L.append("  %s %s%s" % (paint("▸", 2), paint(shorten(gk, 36), 1),
-                 paint("  %d×%s%s" % (len(es), es[0]["type"], agg), 2)))
-        lw = min(20, max(len(e["lbl"]) + 1 + len(short_node(e["node"])) for e in es))
-        pack(["%-*s %s" % (lw, e["lbl"] + "·" + short_node(e["node"]), metrics(e))
-              for e in es], "    ")
-
-    # individual jobs: one cell each, packed across the width
-    if singles:
-        pack(["%-26s %-4s %s" % (shorten(es[0]["dname"], 26),
-              short_node(es[0]["node"]), metrics(es[0])) for _, es in singles], "  ")
+        cells = []
+        for j, nm, nl in zip(jobs, labels, nodelbl):
+            live = j.get("live") or {}
+            gps = live.get("gpus") or ([None] * j["gpu"])
+            g = "  ".join(gpu_block(gp) for gp in gps[:max(j["gpu"], len(gps))])
+            cells.append(("%-*s %-*s  %s%s" % (name_w, nm, node_w, nl, cpu_block(j),
+                                               "   " + g if g else "")).rstrip())
+        L.append("")
+        pack_cells(L, cells, width)
 
     # ---- pending ----
     groups = {}
@@ -498,12 +606,12 @@ def render(nodes, running, my, pending, width):
                          % (paint(str(gr["n"]), 1), label,
                             paint(qos, *qos_codes(qos)), star, eta))
         # wrap items to width
-        line, ll = "  ", 2
+        line, ll = "", 0
         for it in items:
             w = vlen(it) + 3
             if ll + w > width and line.strip():
                 L.append(line)
-                line, ll = "  ", 2
+                line, ll = "", 0
             line += it + "   "
             ll += w
         if line.strip():
@@ -533,13 +641,13 @@ def build(no_live):
     running = get_running()
     my = get_my_jobs()
     pending = get_pending()
+    cpus = get_cpus()
     if not no_live:
-        gpu_jobs = [j for j in my if j["gpu"] > 0]
         with ThreadPoolExecutor(max_workers=16) as ex:
-            for j, r in zip(gpu_jobs, ex.map(collect_job, gpu_jobs)):
+            for j, r in zip(my, ex.map(collect_job, my)):
                 j["live"] = r
-    width = shutil.get_terminal_size((120, 40)).columns
-    return render(nodes, running, my, pending, width)
+    width = term_width()
+    return render(nodes, running, my, pending, cpus, width)
 
 
 def main():
