@@ -131,11 +131,6 @@ def pad(s, n, right=False):
     return (fill + s) if right else (s + fill)
 
 
-def frac(num, den, nw, dw, codes=()):
-    """Render num/den so the slash lands in the same column across a section."""
-    return pad(paint(num, *codes), nw, right=True) + pad("/" + den, dw)
-
-
 def qos_codes(q):
     return QOS_FG.get(q, QOS_DEFAULT_FG)
 
@@ -490,13 +485,14 @@ def render(nodes, running, my, pending, cpus, width):
                 if t in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER), t))
     def free_cells(rows):
         """rows: [(label, free, total)] -> cells with columns aligned in-section."""
-        # key right-aligned; values aligned on their slash
+        # key right-aligned; both sides of the slash right-aligned, as in the
+        # "my cpus"/"my gpus" sections
         lw = max(len(r[0]) for r in rows)
         nw = max(len(str(r[1])) for r in rows)
-        dw = max(len(str(r[2])) for r in rows) + 1
+        dw = max(len(str(r[2])) for r in rows)
         return [pad(paint("%*s" % (lw, r[0]), 2), lw, right=True) + " "
-                + frac(str(r[1]), str(r[2]), nw, dw,
-                       (CYAN if r[1] > 0 else RED,)) for r in rows]
+                + pad(paint(str(r[1]), CYAN if r[1] > 0 else RED), nw, right=True)
+                + "/" + pad(str(r[2]), dw, right=True) for r in rows]
 
     rows = []
     tot_all = used_all = 0
