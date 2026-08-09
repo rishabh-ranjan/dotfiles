@@ -638,7 +638,6 @@ def render(nodes, running, my, pending, cpus, width):
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
                       or [1])
         name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
-        qos_w = max([len(p["qos"]) for p in pending] or [0])
         run_w = max([len(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
         want_w = max([len("%d×%s %dcpu %.0fG" % (p["cnt"] * max(1, p["nn"]),
@@ -684,10 +683,12 @@ def render(nodes, running, my, pending, cpus, width):
             live = j.get("live") or {}
             # live gpus carry their own node; fall back to the job's first node
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
-            # the name is bold; the exclusivity marker deliberately is not
+            # the name is bold and inked with the job's qos; the exclusivity
+            # marker deliberately is not
             excl = " (exclusive)" if j["excl"] else ""
             run_for = fmt_dur((now - j["start"]).total_seconds()) if j["start"] else "?"
-            L.append(("  %s %*s  %s  %s" % (pad(paint(shorten(nm, name_w), 1) + excl,
+            L.append(("  %s %*s  %s  %s" % (pad(paint(shorten(nm, name_w), 1,
+                                                      *qos_codes(j["qos"])) + excl,
                                                 name_w + excl_w),
                                             node_w, nl, cpu_block(j),
                                             pad(paint(run_for, 2), run_w, right=True))).rstrip())
@@ -709,9 +710,10 @@ def render(nodes, running, my, pending, cpus, width):
             want.append("%dcpu" % p["cpu"])
             if p["mem"]:
                 want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
-            L.append("  %s %s  %s  %s" % (
-                pad(paint(shorten(p["name"], name_w), 1), name_w + excl_w),
-                pad(paint(p["qos"], *qos_codes(p["qos"])), qos_w, right=True),
+            # the name's colour already carries the qos, so it is not repeated
+            L.append("  %s %s  %s" % (
+                pad(paint(shorten(p["name"], name_w), 1, *qos_codes(p["qos"])),
+                    name_w + excl_w),
                 pad(" ".join(want), want_w), fmt_eta(p["eta"], now)))
 
     L = []
