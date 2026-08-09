@@ -585,7 +585,7 @@ def render(nodes, running, my, pending, cpus, width):
     # ---- my jobs -------------------------------------------------------------
     # One cell per job, same layout for CPU-only and GPU jobs: name, node,
     # unified per-job CPU usage/memory, then one block per GPU it holds.
-    sec_cpus_mine, sec_gpus_mine = [], []
+    sec_cpus_mine, sec_gpus_mine, sec_pending = [], [], []
     if my or pending:
         # running jobs oldest-first, then the queue
         jobs = sorted(my, key=lambda j: (j["start"] or now, j["name"]))
@@ -603,8 +603,9 @@ def render(nodes, running, my, pending, cpus, width):
         name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
         run_w = max([len(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
-        want_w = max([len("%dcpu %.0fG" % (p["cpu"],
-                                           hum_gib(p["mem"] or 0) * max(1, p["nn"])))
+        want_w = max([len("%d×%s %dcpu %.0fG" % (p["cnt"] * max(1, p["nn"]),
+                                                 disp_type(p["type"]), p["cpu"],
+                                                 hum_gib(p["mem"] or 0) * max(1, p["nn"])))
                       for p in pending] or [0])
 
         def num(s, hot=False):
@@ -729,31 +730,36 @@ def render(nodes, running, my, pending, cpus, width):
                     name_w + excl_w),
                 pad(" ".join(want), want_w), fmt_eta(p["eta"], now))).rstrip())
 
-        # every job appears under "my cpus" with its cpu usage; the ones holding
-        # gpus appear again under "my gpus", there with gpu numbers only
-        pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
-        sec_cpus_mine.append(paint("my cpus", 1))
-        for j, nm, nl in triples:
-            cpu_lines(sec_cpus_mine, j, nm, nl)
-        for p in pend:
-            want = ["%dcpu" % p["cpu"]]
-            if p["mem"]:
-                want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
-            pend_line(sec_cpus_mine, p, want)
+        # every running job appears under "my cpus" with its cpu usage; the ones
+        # holding gpus appear again under "my gpus", there with gpu numbers only
+        if triples:
+            sec_cpus_mine.append(paint("my cpus", 1))
+            for j, nm, nl in triples:
+                cpu_lines(sec_cpus_mine, j, nm, nl)
 
         gpu_triples = [x for x in triples if x[0]["gpu"] > 0]
-        gpu_pend = [p for p in pend if p["cnt"]]
-        if gpu_triples or gpu_pend:
+        if gpu_triples:
             sec_gpus_mine.append(paint("my gpus", 1))
             for j, nm, nl in gpu_triples:
                 gpu_lines(sec_gpus_mine, j, nm, nl)
-            for p in gpu_pend:
-                pend_line(sec_gpus_mine, p,
-                          ["%d×%s" % (p["cnt"] * max(1, p["nn"]), disp_type(p["type"]))])
+
+        # queued jobs get a section of their own
+        pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
+        if pend:
+            sec_pending.append(paint("my pending", 1))
+            for p in pend:
+                want = []
+                if p["cnt"]:
+                    want.append("%d×%s" % (p["cnt"] * max(1, p["nn"]),
+                                           disp_type(p["type"])))
+                want.append("%dcpu" % p["cpu"])
+                if p["mem"]:
+                    want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
+                pend_line(sec_pending, p, want)
 
     L = []
     for sec in (sec_users, sec_cpus_free, sec_gpus_free,
-                sec_gpus, sec_cpus_mine, sec_gpus_mine):
+                sec_gpus, sec_cpus_mine, sec_gpus_mine, sec_pending):
         if not sec:
             continue
         if L:
