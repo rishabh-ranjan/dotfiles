@@ -601,9 +601,8 @@ def render(nodes, running, my, pending, cpus, width):
         name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
         run_w = max([len(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
-        want_w = max([len("%d×%s %dcpu %.0fG" % (p["cnt"] * max(1, p["nn"]),
-                                                 disp_type(p["type"]), p["cpu"],
-                                                 hum_gib(p["mem"] or 0) * max(1, p["nn"])))
+        want_w = max([len("%dcpu %.0fG" % (p["cpu"],
+                                           hum_gib(p["mem"] or 0) * max(1, p["nn"])))
                       for p in pending] or [0])
 
         def num(s, hot=False):
@@ -640,19 +639,26 @@ def render(nodes, running, my, pending, cpus, width):
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
 
-        def job_lines(L, j, nm, nl):
-            live = j.get("live") or {}
-            # live gpus carry their own node; fall back to the job's first node
-            gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
+        def head_line(j, nm, nl, tail):
             # the name is bold and inked with the job's qos; the exclusivity
             # marker deliberately is not
             excl = " (exclusive)" if j["excl"] else ""
             run_for = fmt_dur((now - j["start"]).total_seconds()) if j["start"] else "?"
-            L.append(("  %s %*s  %s  %s" % (pad(paint(shorten(nm, name_w), 1,
-                                                      *qos_codes(j["qos"])) + excl,
-                                                name_w + excl_w),
-                                            node_w, nl, cpu_block(j),
-                                            pad(paint(run_for, 2), run_w, right=True))).rstrip())
+            return ("  %s %*s  %s%s" % (pad(paint(shorten(nm, name_w), 1,
+                                                  *qos_codes(j["qos"])) + excl,
+                                            name_w + excl_w),
+                                        node_w, nl, tail,
+                                        pad(paint(run_for, 2), run_w + 2,
+                                            right=True))).rstrip()
+
+        def cpu_lines(L, j, nm, nl):
+            L.append(head_line(j, nm, nl, cpu_block(j)))
+
+        def gpu_lines(L, j, nm, nl):
+            live = j.get("live") or {}
+            # live gpus carry their own node; fall back to the job's first node
+            gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
+            L.append(head_line(j, nm, nl, ""))
             # the job's GPUs go on their own indented line(s) below it,
             # never mixing GPUs from different nodes in one row
             gnodes = []
@@ -663,34 +669,34 @@ def render(nodes, running, my, pending, cpus, width):
                 pack_cells(L, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
                            width, gap=3, indent="    ")
 
-        def pend_line(L, p):
-            want = []
-            if p["cnt"]:
-                want.append("%d×%s" % (p["cnt"] * max(1, p["nn"]), disp_type(p["type"])))
-            want.append("%dcpu" % p["cpu"])
-            if p["mem"]:
-                want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
+        def pend_line(L, p, want):
             # the name's colour already carries the qos, so it is not repeated
-            L.append("  %s %s  %s" % (
+            L.append(("  %s %s  %s" % (
                 pad(paint(shorten(p["name"], name_w), 1, *qos_codes(p["qos"])),
                     name_w + excl_w),
-                pad(" ".join(want), want_w), fmt_eta(p["eta"], now)))
+                pad(" ".join(want), want_w), fmt_eta(p["eta"], now))).rstrip())
 
-        # cpu-only and gpu work get a section each; queued jobs follow the
-        # running ones inside whichever section they belong to
+        # every job appears under "my cpus" with its cpu usage; the ones holding
+        # gpus appear again under "my gpus", there with gpu numbers only
         pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
-        for title, dest, mine, queued in (
-                ("my cpus", sec_cpus_mine, [x for x in triples if x[0]["gpu"] == 0],
-                 [p for p in pend if not p["cnt"]]),
-                ("my gpus", sec_gpus_mine, [x for x in triples if x[0]["gpu"] > 0],
-                 [p for p in pend if p["cnt"]])):
-            if not mine and not queued:
-                continue
-            dest.append(paint(title, 1))
-            for j, nm, nl in mine:
-                job_lines(dest, j, nm, nl)
-            for p in queued:
-                pend_line(dest, p)
+        sec_cpus_mine.append(paint("my cpus", 1))
+        for j, nm, nl in triples:
+            cpu_lines(sec_cpus_mine, j, nm, nl)
+        for p in pend:
+            want = ["%dcpu" % p["cpu"]]
+            if p["mem"]:
+                want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
+            pend_line(sec_cpus_mine, p, want)
+
+        gpu_triples = [x for x in triples if x[0]["gpu"] > 0]
+        gpu_pend = [p for p in pend if p["cnt"]]
+        if gpu_triples or gpu_pend:
+            sec_gpus_mine.append(paint("my gpus", 1))
+            for j, nm, nl in gpu_triples:
+                gpu_lines(sec_gpus_mine, j, nm, nl)
+            for p in gpu_pend:
+                pend_line(sec_gpus_mine, p,
+                          ["%d×%s" % (p["cnt"] * max(1, p["nn"]), disp_type(p["type"]))])
 
     L = []
     for sec in (sec_cpus_free, sec_cpus_mine, sec_users,
