@@ -620,28 +620,29 @@ def render(nodes, running, my, pending, cpus, width):
             mx = live.get("mmax")
             return mx if (mx and mx < 2 ** 62) else j["mem"]
 
-        cu_nw = max([len("%.1f" % (j.get("live") or {}).get("cores", 0))
+        # widths from the values that actually occur (same rule as the gpu rows)
+        cu_nw = max([len("%.1f" % ((j.get("live") or {}).get("cores") or 0))
                      for j in jobs] or [1])
-        cu_dw = max([len("/%dcpu" % j["cpu"]) for j in jobs] or [1])
+        cu_dw = max([len("%dcpu" % j["cpu"]) for j in jobs] or [1])
         cm_nw = max([len("%.0f" % hum_gib((j.get("live") or {}).get("anon") or 0))
                      for j in jobs] or [1])
-        cm_dw = max([len("/%.0fG" % hum_gib(job_alloc(j) or 0)) for j in jobs] or [1])
+        cm_dw = max([len("%.0fG" % hum_gib(job_alloc(j) or 0)) for j in jobs] or [1])
 
         def cpu_block(j):
             live = j.get("live") or {}
             cores = live.get("cores")
-            cu = frac("%.1f" % cores if cores is not None else "?",
-                      "%dcpu" % j["cpu"], cu_nw, cu_dw,
-                      (CYAN,) if cores is not None else (DIM,))
+            # denominators right-aligned, so the unit hugs its number
+            cu = pad(paint("%.1f" % cores if cores is not None else "?",
+                           *((CYAN,) if cores is not None else (DIM,))), cu_nw,
+                     right=True) + "/" + pad("%dcpu" % j["cpu"], cu_dw, right=True)
             alloc = job_alloc(j)
             if live.get("anon") is not None and alloc:
                 hot = live["anon"] / alloc > 0.9
-                cm = frac("%.0f" % hum_gib(live["anon"]), "%.0fG" % hum_gib(alloc),
-                          cm_nw, cm_dw, (RED,) if hot else (CYAN,))
-            elif alloc:
-                cm = frac("?", "%.0fG" % hum_gib(alloc), cm_nw, cm_dw, (DIM,))
+                num = paint("%.0f" % hum_gib(live["anon"]), RED if hot else CYAN)
             else:
-                cm = pad(paint("?", DIM), cm_nw + cm_dw, right=True)
+                num = paint("?", DIM)
+            den = ("%.0fG" % hum_gib(alloc)) if alloc else paint("?", DIM)
+            cm = pad(num, cm_nw, right=True) + "/" + pad(den, cm_dw, right=True)
             return cu + " " + cm
 
         # column widths from the values that actually occur, no reserved slack
