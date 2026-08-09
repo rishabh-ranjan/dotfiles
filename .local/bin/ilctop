@@ -684,17 +684,33 @@ def render(nodes, running, my, pending, cpus, width):
             for gn, _ in gps:
                 if gn not in gnodes:
                     gnodes.append(gn)
-            indent = " " * (2 + name_w + excl_w + 2)
-            rows = []
-            for gn in gnodes:
-                pack_cells(rows, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
-                           width, gap=3, indent=indent)
             head = head_line(j, nm, nl, "", plain=True)
-            if rows:
-                rows[0] = pad(head, len(indent)) + rows[0][len(indent):]
-                L += rows
-            else:
+            lead = pad(head, 2 + name_w + excl_w + 2)   # only the first row is inset
+            allc = [gpu_block(short_node(n), gp) for n, gp in gps]
+            if not allc:
                 L.append(head)
+                return
+            cw = max(vlen(c) for c in allc)
+
+            def layout(avail):
+                """Column count and gaps that justify a full row into `avail`."""
+                k = max(1, (avail + 3) // (cw + 3))
+                slack = avail - k * cw - 3 * (k - 1)
+                return k, [3 + slack // (k - 1) + (1 if i < slack % (k - 1) else 0)
+                           for i in range(k - 1)] if k > 1 else (k, [])
+
+            k1, gaps1 = layout(width - vlen(lead))
+            k2, gaps2 = layout(width - 4)
+            first = True
+            for gn in gnodes:
+                cells = [gpu_block(short_node(n), gp) for n, gp in gps if n == gn]
+                while cells:
+                    prefix, k, gaps = (lead, k1, gaps1) if first else ("    ", k2, gaps2)
+                    row, cells = cells[:k], cells[k:]
+                    L.append((prefix + "".join(pad(c, cw)
+                              + " " * (gaps[i] if i < len(gaps) else 0)
+                              for i, c in enumerate(row))).rstrip())
+                    first = False
 
         def pend_line(L, p, want):
             # the name's colour already carries the qos, so it is not repeated
