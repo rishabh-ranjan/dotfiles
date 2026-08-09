@@ -818,7 +818,9 @@ def build(no_live):
                 cores=sum(cores) if cores else None,
                 anon=sum(anon) if anon else None,
                 mmax=sum(mmax) if mmax else None)
-    width = term_width()
+    # keep one column spare: a line that exactly fills the terminal makes it
+    # wrap, which under `watch` pushes everything down and eats blank lines
+    width = max(20, term_width() - 1)
     return render(nodes, running, my, pending, cpus, width)
 
 
