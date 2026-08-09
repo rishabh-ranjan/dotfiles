@@ -678,16 +678,23 @@ def render(nodes, running, my, pending, cpus, width):
             live = j.get("live") or {}
             # live gpus carry their own node; fall back to the job's first node
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
-            L.append(head_line(j, nm, nl, "", plain=True))
-            # the job's GPUs go on their own indented line(s) below it,
-            # never mixing GPUs from different nodes in one row
+            # GPUs are packed to the right of the name, which sits in the first
+            # column of the first row; never mix GPUs from different nodes
             gnodes = []
             for gn, _ in gps:
                 if gn not in gnodes:
                     gnodes.append(gn)
+            indent = " " * (2 + name_w + excl_w + 2)
+            rows = []
             for gn in gnodes:
-                pack_cells(L, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
-                           width, gap=3, indent="    ")
+                pack_cells(rows, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
+                           width, gap=3, indent=indent)
+            head = head_line(j, nm, nl, "", plain=True)
+            if rows:
+                rows[0] = pad(head, len(indent)) + rows[0][len(indent):]
+                L += rows
+            else:
+                L.append(head)
 
         def pend_line(L, p, want):
             # the name's colour already carries the qos, so it is not repeated
