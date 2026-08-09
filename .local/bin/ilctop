@@ -491,7 +491,7 @@ def render(nodes, running, my, pending, cpus, width):
         nw = max(len(str(r[1])) for r in rows)
         dw = max(len(str(r[2])) for r in rows)
         return [pad(paint("%*s" % (lw, r[0]), 2), lw, right=True) + " "
-                + pad(paint(str(r[1]), CYAN if r[1] > 0 else RED), nw, right=True)
+                + pad(paint(str(r[1]), YELLOW if r[1] > 0 else RED), nw, right=True)
                 + "/" + pad(str(r[2]), dw, right=True) for r in rows]
 
     rows = []
@@ -609,7 +609,7 @@ def render(nodes, running, my, pending, cpus, width):
 
         def num(s, hot=False):
             """Numerators are inked like the free counts; red when nearly full."""
-            return paint(s, RED if hot else CYAN)
+            return paint(s, RED if hot else YELLOW)
 
         def job_alloc(j):
             live = j.get("live") or {}
@@ -629,12 +629,12 @@ def render(nodes, running, my, pending, cpus, width):
             cores = live.get("cores")
             # denominators right-aligned, so the unit hugs its number
             cu = pad(paint("%.1f" % cores if cores is not None else "?",
-                           *((CYAN,) if cores is not None else (DIM,))), cu_nw,
+                           *((YELLOW,) if cores is not None else (DIM,))), cu_nw,
                      right=True) + "/" + pad("%dcpu" % j["cpu"], cu_dw, right=True)
             alloc = job_alloc(j)
             if live.get("anon") is not None and alloc:
                 hot = live["anon"] / alloc > 0.9
-                num = paint("%.0f" % hum_gib(live["anon"]), RED if hot else CYAN)
+                num = paint("%.0f" % hum_gib(live["anon"]), RED if hot else YELLOW)
             else:
                 num = paint("?", DIM)
             den = ("%.0fG" % hum_gib(alloc)) if alloc else paint("?", DIM)
@@ -659,7 +659,7 @@ def render(nodes, running, my, pending, cpus, width):
                     + pad(paint("?", DIM), gp_w, right=True)
             # the memory denominator is right-aligned, so G and W sit one apart
             mem = pad(paint("%.0f" % (gp["mu"] / 1024),
-                            *((RED,) if gp["mu"] / gp["mt"] > 0.9 else (CYAN,))),
+                            *((RED,) if gp["mu"] / gp["mt"] > 0.9 else (YELLOW,))),
                       gm_nw, right=True) + "/" \
                 + pad("%.0fG" % (gp["mt"] / 1024), gm_dw, right=True)
             return "%s%s %s %s" % (head,
