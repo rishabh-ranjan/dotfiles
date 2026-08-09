@@ -648,9 +648,11 @@ def render(nodes, running, my, pending, cpus, width):
             # the node name prefixes every GPU, which also visually separates them
             head = paint("%*s " % (gnode_w, nl), 2)
             if gp is None:
-                return head + paint("   ?   ?" + " " * 6 + "   ?", 2)
-            mem = frac("%.0f" % (gp["mu"] / 1024), "%.0fG" % (gp["mt"] / 1024), 3, 6,
-                       (RED,) if gp["mu"] / gp["mt"] > 0.9 else (CYAN,))
+                return head + paint("   ?   ?/   ?    ?", 2)
+            # the memory denominator is right-aligned, so G and W sit one apart
+            mem = pad(paint("%.0f" % (gp["mu"] / 1024),
+                            *((RED,) if gp["mu"] / gp["mt"] > 0.9 else (CYAN,))),
+                      3, right=True) + "/" + pad("%.0fG" % (gp["mt"] / 1024), 5, right=True)
             return "%s%s %s %4s" % (head,
                                     paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
                                     mem, "%3.0fW" % gp["pw"])
