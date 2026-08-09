@@ -480,13 +480,12 @@ def render(nodes, running, my, pending, cpus, width):
                 if t in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER), t))
     def free_cells(rows):
         """rows: [(label, free, total)] -> cells with columns aligned in-section."""
+        # key right-aligned, value left-aligned, single space between
         lw = max(len(r[0]) for r in rows)
-        fw = max(len(str(r[1])) for r in rows)
-        tw = max(len(str(r[2])) for r in rows)
-        return ["%s %s/%s" % (paint("%-*s" % (lw, r[0]), 2),
-                              pad(paint("%*d" % (fw, r[1]), 38, 5,
-                                        45 if r[1] > 0 else 203), fw, right=True),
-                              "%-*d" % (tw, r[2])) for r in rows]
+        vw = max(len("%d/%d" % (r[1], r[2])) for r in rows)
+        return [pad(paint("%*s" % (lw, r[0]), 2), lw, right=True) + " "
+                + pad(paint(str(r[1]), 38, 5, 45 if r[1] > 0 else 203)
+                      + "/%d" % r[2], vw) for r in rows]
 
     rows = []
     tot_all = used_all = 0
