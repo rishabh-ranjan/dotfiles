@@ -133,7 +133,8 @@ def pad(s, n, right=False):
 
 def frac(num, den, nw, dw, codes=(), unit="", uw=0):
     """num/den unit, with the slash and the unit each in a fixed column."""
-    out = pad(paint(num, *codes), nw, right=True) + "/" + pad(den, dw)
+    # with a unit, the denominator is right-aligned so the unit hugs the number
+    out = pad(paint(num, *codes), nw, right=True) + "/" + pad(den, dw, right=bool(uw))
     return out + (" " + pad(unit, uw) if uw else "")
 
 
