@@ -277,9 +277,11 @@ def get_running():
         if len(f) < 5:
             continue
         m = re.search(r"gres/gpu=(\d+)", f[4])
+        c = re.search(r"cpu=(\d+)", f[4])
         jobs.append(dict(user=f[0].strip(), qos=f[1].strip(),
                          nn=int(f[2].strip() or 1), nodelist=f[3].strip(),
-                         gpu=int(m.group(1)) if m else 0))
+                         gpu=int(m.group(1)) if m else 0,
+                         cpu=int(c.group(1)) if c else 0))
     return jobs
 
 
@@ -491,7 +493,11 @@ def render(nodes, running, my, pending, cpus, width):
             counts[nd][key] = counts[nd].get(key, 0) + per
             used_type[nodes[nd]["type"]] = used_type.get(nodes[nd]["type"], 0) + per
 
-    users = {k[0] for nd in counts for k in counts[nd]}
+    # cpus are counted for every running job, so cpu-only users show up too
+    user_cpu = {}
+    for j in running:
+        user_cpu[j["user"]] = user_cpu.get(j["user"], 0) + j["cpu"]
+    users = {k[0] for nd in counts for k in counts[nd]} | set(user_cpu)
     chars, order = assign_chars(users)
 
     # ---- qos colour key: shown right-justified on the gpus section header ----
@@ -546,19 +552,24 @@ def render(nodes, running, my, pending, cpus, width):
             user_gpu[u] = user_gpu.get(u, 0) + n
             ut = user_type.setdefault(u, {})
             ut[t] = ut.get(t, 0) + n
-    leg_order = ([ME] if ME in user_gpu else []) + sorted(
-        (u for u in order if u != ME), key=lambda u: (-user_gpu.get(u, 0), u))
+    leg_order = ([ME] if ME in order else []) + sorted(
+        (u for u in order if u != ME),
+        key=lambda u: (-user_gpu.get(u, 0), -user_cpu.get(u, 0), u))
     name_w = max([len(u) for u in leg_order] or [0])
-    leg = []
+    splits = {}
     for u in leg_order:
         bd = user_type.get(u, {})
         # always the per-type breakdown, never a bare total
-        split = " ".join("%d×%s" % (bd[t], disp_type(t)) for t in sorted(
+        splits[u] = " ".join("%d×%s" % (bd[t], disp_type(t)) for t in sorted(
             bd, key=lambda t: (GPU_TYPE_ORDER.index(t) if t in GPU_TYPE_ORDER
                                else len(GPU_TYPE_ORDER), t)))
+    leg = []
+    for u in leg_order:
         # only the glyph is bold for me; the name stays dim like everyone else's
         leg.append(paint(chars[u], 1) if u == ME else chars[u])
-        leg[-1] += paint("=%-*s" % (name_w, u), 2) + " " + split
+        # cpus run inline with the gpu breakdown, not in a column of their own
+        leg[-1] += (paint("=%-*s" % (name_w, u), 2) + " "
+                    + " ".join(filter(None, [splits[u], "%dcpu" % user_cpu.get(u, 0)])))
     if leg:
         L.append("")
         L.append(paint("users", 1))
@@ -617,10 +628,10 @@ def render(nodes, running, my, pending, cpus, width):
         jobs = sorted(my, key=lambda j: (natkey(j["node"]), j["name"]))
         labels, nodelbl = [], []
         for j in jobs:
-            nm = shorten(j["name"].rstrip("|"), 30)
-            labels.append(nm + (" (excl)" if j["excl"] else ""))
+            labels.append(shorten(j["name"].rstrip("|"), 30))
             nodelbl.append(",".join(short_node(n) for n in (j["nodes"] or [])))
         name_w = max(len(x) for x in labels)
+        excl_w = 12 if any(j["excl"] for j in jobs) else 0   # " (exclusive)"
         node_w = max(len(x) for x in nodelbl)
         # width of a single node name, used to prefix each GPU below its job
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
@@ -665,7 +676,10 @@ def render(nodes, running, my, pending, cpus, width):
             live = j.get("live") or {}
             # live gpus carry their own node; fall back to the job's first node
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
-            L.append(("  %s %-*s  %s" % (pad(paint(shorten(nm, name_w), 1), name_w),
+            # the name is bold; the exclusivity marker deliberately is not
+            excl = " (exclusive)" if j["excl"] else ""
+            L.append(("  %s %-*s  %s" % (pad(paint(shorten(nm, name_w), 1) + excl,
+                                             name_w + excl_w),
                                          node_w, nl, cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it,
             # never mixing GPUs from different nodes in one row
