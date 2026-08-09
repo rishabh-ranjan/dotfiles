@@ -626,17 +626,20 @@ def render(nodes, running, my, pending, cpus, width):
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
                       or [1])
 
+        def num(s, hot=False):
+            """Numerators are inked like the free counts; red when nearly full."""
+            return paint(s, 38, 5, 160 if hot else 30)
+
         def cpu_block(j):
             live = j.get("live") or {}
             cores = live.get("cores")
-            cu = ("%.1f/%dcpu" % (cores, j["cpu"])) if cores is not None \
+            cu = (num("%.1f" % cores) + "/%dcpu" % j["cpu"]) if cores is not None \
                 else paint("?/%dcpu" % j["cpu"], 2)
             alloc = live.get("mmax") if (live.get("mmax") and live["mmax"] < 2 ** 62) \
                 else j["mem"]
             if live.get("anon") is not None and alloc:
-                cm = "%.0f/%.0fG" % (hum_gib(live["anon"]), hum_gib(alloc))
-                if live["anon"] / alloc > 0.9:
-                    cm = paint(cm, 38, 5, 160)
+                hot = live["anon"] / alloc > 0.9
+                cm = num("%.0f" % hum_gib(live["anon"]), hot) + "/%.0fG" % hum_gib(alloc)
             elif j["mem"]:
                 cm = paint("?/%.0fG" % hum_gib(j["mem"]), 2)
             else:
@@ -648,10 +651,11 @@ def render(nodes, running, my, pending, cpus, width):
             head = paint("%-*s " % (gnode_w, nl), 2)
             if gp is None:
                 return head + paint("   ?       ?    ?", 2)
-            return "%s%s %7s %4s" % (head,
-                                     paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
-                                     "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024),
-                                     "%3.0fW" % gp["pw"])
+            mem = num("%.0f" % (gp["mu"] / 1024),
+                      gp["mu"] / gp["mt"] > 0.9) + "/%.0fG" % (gp["mt"] / 1024)
+            return "%s%s %s %4s" % (head,
+                                    paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
+                                    pad(mem, 7, right=True), "%3.0fW" % gp["pw"])
 
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
