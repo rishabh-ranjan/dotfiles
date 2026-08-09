@@ -490,8 +490,8 @@ def render(nodes, running, my, pending, cpus, width):
         used_all += u
         parts.append(free_cell(t, total_type[t] - u, total_type[t]))
     L.append("")
-    wrap_items(L, "free gpus " + pad(paint("%d/%d" % (tot_all - used_all, tot_all), 1), 12)
-               + " ", parts, width)
+    L.append("free gpus " + paint("%d/%d" % (tot_all - used_all, tot_all), 1))
+    wrap_items(L, "  ", parts, width)
 
     # ---- free cpus, broken down by node family ----
     fam_idle, fam_tot = {}, {}
@@ -502,8 +502,9 @@ def render(nodes, running, my, pending, cpus, width):
     if fam_tot:
         cparts = [free_cell(f, fam_idle[f], fam_tot[f])
                   for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
-        wrap_items(L, "free cpus " + pad(paint("%d/%d" % (sum(fam_idle.values()),
-                   sum(fam_tot.values())), 1), 12) + " ", cparts, width)
+        L.append("free cpus " + paint("%d/%d" % (sum(fam_idle.values()),
+                                                 sum(fam_tot.values())), 1))
+        wrap_items(L, "  ", cparts, width)
 
     # ---- user legend with per-user GPU breakdown (me first, then most-used) ----
     user_gpu, user_type = {}, {}
