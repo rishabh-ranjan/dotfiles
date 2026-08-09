@@ -297,9 +297,10 @@ def get_my_jobs():
         g = re.search(r"gres/gpu=(\d+)", tres)
         cpu = re.search(r"cpu=(\d+)", tres)
         mem = re.search(r"mem=([0-9.]+[KMGT]?)", tres)
+        nds = expand_nodes(f[2].strip()) if f[2].strip() else []
         jobs.append(dict(
             jobid=f[0].strip(), qos=f[1].strip(),
-            node=expand_nodes(f[2].strip())[0] if f[2].strip() else "",
+            nodes=nds, node=nds[0] if nds else "",
             gpu=int(g.group(1)) if g else 0,
             cpu=int(cpu.group(1)) if cpu else 0,
             mem=parse_mem(mem.group(1)) if mem else None,
@@ -334,9 +335,14 @@ def get_pending():
     return pend
 
 
-def collect_job(job):
-    """Live GPU + CPU stats for one of my jobs via a single srun --overlap."""
-    jid, node = job["jobid"], job["node"]
+def collect_node(task):
+    """Live GPU + CPU stats for one (job, node) pair via a single srun --overlap.
+
+    A multi-node job has one cgroup and one set of GPUs per node, so it needs
+    one probe per node; the caller merges the per-node results.
+    """
+    job, node = task
+    jid = job["jobid"]
     if not node:
         return None
     snippet = (
@@ -377,7 +383,8 @@ def collect_job(job):
     cores = None
     if all(d.get(k) is not None for k in ("T1", "T2", "U1", "U2")) and d["T2"] > d["T1"]:
         cores = (d["U2"] - d["U1"]) / 1e6 / ((d["T2"] - d["T1"]) / 1e9)
-    return dict(gpus=gpus, anon=d.get("AN"), mmax=d.get("MX"), cores=cores)
+    return dict(node=node, gpus=gpus, anon=d.get("AN"),
+                mmax=d.get("MX"), cores=cores)
 
 
 # --- user -> single character ------------------------------------------------
@@ -612,9 +619,12 @@ def render(nodes, running, my, pending, cpus, width):
         for j in jobs:
             nm = shorten(j["name"].rstrip("|"), 30)
             labels.append(nm + (" (excl)" if j["excl"] else ""))
-            nodelbl.append(short_node(j["node"]))
+            nodelbl.append(",".join(short_node(n) for n in (j["nodes"] or [])))
         name_w = max(len(x) for x in labels)
         node_w = max(len(x) for x in nodelbl)
+        # width of a single node name, used to prefix each GPU below its job
+        gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
+                      or [1])
 
         def cpu_block(j):
             live = j.get("live") or {}
@@ -635,7 +645,7 @@ def render(nodes, running, my, pending, cpus, width):
 
         def gpu_block(nl, gp):
             # the node name prefixes every GPU, which also visually separates them
-            head = paint("%-*s " % (node_w, nl), 2)
+            head = paint("%-*s " % (gnode_w, nl), 2)
             if gp is None:
                 return head + paint("   ?       ?    ?", 2)
             return "%s%s %7s %4s" % (head,
@@ -649,11 +659,13 @@ def render(nodes, running, my, pending, cpus, width):
         L.append(paint("my jobs", 1))
         for j, nm, nl in zip(jobs, labels, nodelbl):
             live = j.get("live") or {}
-            gps = live.get("gpus") or ([None] * j["gpu"])
+            # live gpus carry their own node; fall back to the job's first node
+            gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
             L.append(("  %-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
                                            cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it
-            pack_cells(L, [gpu_block(nl, gp) for gp in gps], width, gap=3, indent="    ")
+            pack_cells(L, [gpu_block(short_node(gn), gp) for gn, gp in gps],
+                       width, gap=3, indent="    ")
 
     # ---- pending ----
     groups = {}
@@ -705,9 +717,25 @@ def build(no_live):
     pending = get_pending()
     cpus = get_cpus()
     if not no_live:
+        tasks = [(j, nd) for j in my for nd in (j["nodes"] or [])]
         with ThreadPoolExecutor(max_workers=16) as ex:
-            for j, r in zip(my, ex.map(collect_job, my)):
-                j["live"] = r
+            res = list(ex.map(collect_node, tasks))
+        per_job = {}
+        for (j, _nd), r in zip(tasks, res):
+            if r:
+                per_job.setdefault(id(j), []).append(r)
+        for j in my:                      # merge the per-node probes into one view
+            rs = per_job.get(id(j))
+            if not rs:
+                continue
+            cores = [r["cores"] for r in rs if r["cores"] is not None]
+            anon = [r["anon"] for r in rs if r["anon"] is not None]
+            mmax = [r["mmax"] for r in rs if r["mmax"] and r["mmax"] < 2 ** 62]
+            j["live"] = dict(
+                gpus=[(r["node"], gp) for r in rs for gp in r["gpus"]],
+                cores=sum(cores) if cores else None,
+                anon=sum(anon) if anon else None,
+                mmax=sum(mmax) if mmax else None)
     width = term_width()
     return render(nodes, running, my, pending, cpus, width)
 
