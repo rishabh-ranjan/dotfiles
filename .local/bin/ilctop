@@ -602,12 +602,15 @@ def render(nodes, running, my, pending, cpus, width):
                 cm = paint("?", 2)
             return pad(cu, 11) + " " + pad(cm, 9, right=True)
 
-        def gpu_block(gp):
+        def gpu_block(nl, gp):
+            # the node name prefixes every GPU, which also visually separates them
+            head = paint("%-*s " % (node_w, nl), 2)
             if gp is None:
-                return paint("   ?       ?    ?", 2)
-            return "%s %7s %4s" % (paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
-                                   "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024),
-                                   "%3.0fW" % gp["pw"])
+                return head + paint("   ?       ?    ?", 2)
+            return "%s%s %7s %4s" % (head,
+                                     paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
+                                     "%.0f/%.0fG" % (gp["mu"] / 1024, gp["mt"] / 1024),
+                                     "%3.0fW" % gp["pw"])
 
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 2 + 21)))
@@ -618,7 +621,7 @@ def render(nodes, running, my, pending, cpus, width):
             L.append(("%-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
                                          cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it
-            wrap_items(L, "  ", [gpu_block(gp) for gp in gps], width)
+            wrap_items(L, "  ", [gpu_block(nl, gp) for gp in gps], width, gap=3)
 
     # ---- pending ----
     groups = {}
