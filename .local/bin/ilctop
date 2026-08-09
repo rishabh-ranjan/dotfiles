@@ -428,15 +428,26 @@ def wrap_items(L, prefix, items, width, gap=2):
 
 
 def pack_cells(L, cells, width, gap=3, indent=""):
-    """Lay out equal-width cells in as many columns as fit, never wrapping."""
+    """Lay out equal-width cells in as many columns as fit, never wrapping.
+
+    Leftover space is spread evenly over the inter-column gaps so the rows are
+    justified to the full terminal width; every row uses the same gaps, so the
+    columns stay aligned even on a short final row.
+    """
     if not cells:
         return
     avail = max(1, width - len(indent))
     cw = min(max(vlen(c) for c in cells), avail)
     cells = [pad(vtrunc(c, cw), cw) for c in cells]
-    ncols = max(1, (avail + gap) // (cw + gap))
+    ncols = min(max(1, (avail + gap) // (cw + gap)), len(cells))
+    slack = avail - ncols * cw - gap * (ncols - 1)
+    gaps = [gap + slack // (ncols - 1) + (1 if i < slack % (ncols - 1) else 0)
+            for i in range(ncols - 1)] if ncols > 1 else []
     for i in range(0, len(cells), ncols):
-        L.append((indent + (" " * gap).join(cells[i:i + ncols])).rstrip())
+        row = cells[i:i + ncols]
+        line = indent + "".join(c + " " * (gaps[k] if k < len(gaps) else 0)
+                                for k, c in enumerate(row))
+        L.append(line.rstrip())
 
 
 def render(nodes, running, my, pending, cpus, width):
@@ -621,7 +632,7 @@ def render(nodes, running, my, pending, cpus, width):
             L.append(("%-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
                                          cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it
-            wrap_items(L, "  ", [gpu_block(nl, gp) for gp in gps], width, gap=3)
+            pack_cells(L, [gpu_block(nl, gp) for gp in gps], width, gap=3, indent="  ")
 
     # ---- pending ----
     groups = {}
