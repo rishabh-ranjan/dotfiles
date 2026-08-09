@@ -81,11 +81,11 @@ RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK, DIM = 31, 32, 33, 34, 35, 36, 30
 # the dim attribute both wash out, which is what makes glyphs hard to read.
 QOS_FG = {
     "il-interactive": (RED,),
-    "il": (YELLOW,),
+    "il": (BLUE,),
     "il-lo": (BLACK,),       # dark grey: lowest priority, de-emphasised
-    "il-cpu-long": (CYAN,),
-    "normal": (BLUE,),
-    "dev": (MAGENTA,),
+    "il-cpu-long": (MAGENTA,),
+    "normal": (YELLOW,),
+    "dev": (CYAN,),
 }
 QOS_DEFAULT_FG = (BLACK,)
 GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
