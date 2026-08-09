@@ -699,8 +699,6 @@ def render(nodes, running, my, pending, cpus, width):
             continue
         if L:
             L.append("")
-        if sec is sec_gpus:                  # extra breathing room before the map
-            L.append("")
         L += sec
     return L
 
