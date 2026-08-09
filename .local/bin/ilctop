@@ -274,7 +274,7 @@ def get_my_jobs():
             mem=parse_mem(mem.group(1)) if mem else None,
             excl=f[4].strip().upper() not in ("OK", "YES", ""),
             start=parse_time(f[5].strip()),
-            name="|".join(f[6:]).strip(),
+            name="|".join(f[6:]).strip().rstrip("|"),
         ))
     return jobs
 
@@ -303,7 +303,7 @@ def get_pending():
                          cpu=int(f[4].strip() or 0),
                          mem=parse_mem(f[5].strip()) if f[5].strip() else None,
                          nn=int(f[6].strip() or 1),
-                         name="|".join(f[7:]).strip()))
+                         name="|".join(f[7:]).strip().rstrip("|")))
     return pend
 
 
