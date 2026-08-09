@@ -7,7 +7,7 @@ Three vertically-compact sections:
                   .   free          x   node unavailable (drain/down)
                   <c> in use; <c> is a letter identifying the owning user
                The glyph COLOUR encodes the holding job's QoS:
-                  red = il-interactive   orange = il   grey = il-lo
+                  red = il-interactive   orange = il   black = il-lo
                Your own glyph is upper-case and bold. Nodes are packed into
                columns to keep the map short.
 
@@ -74,16 +74,17 @@ USE_COLOR = ((sys.stdout.isatty() or "FORCE_COLOR" in os.environ or WATCH_MODE)
              and "NO_COLOR" not in os.environ)
 ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
-# QoS -> 256-colour foreground (priority high->low: red, orange, grey)
+# QoS -> 256-colour foreground. Deliberately dark, saturated inks: the glyphs
+# are single characters, so light tints (pale grey/yellow) are hard to read.
 QOS_FG = {
-    "il-interactive": 196,   # red
-    "il": 208,               # orange
-    "il-lo": 240,            # near-black grey (lowest priority, de-emphasised)
-    "il-cpu-long": 109,
-    "normal": 39,
-    "dev": 141,
+    "il-interactive": 160,   # red
+    "il": 166,               # orange
+    "il-lo": 16,             # black (lowest priority, de-emphasised)
+    "il-cpu-long": 23,       # dark teal
+    "normal": 19,            # dark blue
+    "dev": 90,               # dark magenta
 }
-QOS_DEFAULT_FG = 250
+QOS_DEFAULT_FG = 16
 GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
 NODE_ABBREV = {"ampere": "a", "turing": "t", "hyperturing": "ht",
                "hyperion": "h", "blackwell": "bw"}
@@ -403,7 +404,7 @@ def fmt_g(gib):
 
 
 def gutil_codes(u):
-    return (38, 5, 40) if u >= 70 else (38, 5, 220) if u >= 30 else (38, 5, 203)
+    return (38, 5, 28) if u >= 70 else (38, 5, 172) if u >= 30 else (38, 5, 160)
 
 
 def vtrunc(s, n):
@@ -503,7 +504,7 @@ def render(nodes, running, my, pending, cpus, width):
         lw = max(len(r[0]) for r in rows)
         vw = max(len("%d/%d" % (r[1], r[2])) for r in rows)
         return [pad(paint("%*s" % (lw, r[0]), 2), lw, right=True) + " "
-                + pad(paint(str(r[1]), 38, 5, 45 if r[1] > 0 else 203)
+                + pad(paint(str(r[1]), 38, 5, 30 if r[1] > 0 else 160)
                       + "/%d" % r[2], vw) for r in rows]
 
     rows = []
@@ -575,7 +576,7 @@ def render(nodes, running, my, pending, cpus, width):
                     break
                 g += paint(chars.get(u, "?"), *(qos_codes(q) + ((1,) if u == ME else ())))
                 drawn += 1
-        free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 196))
+        free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 160))
         g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
         g += " " * (glyph_w - cap)
         return "%-*s %s %s" % (label_w, short_node(n),
@@ -613,7 +614,7 @@ def render(nodes, running, my, pending, cpus, width):
             if live.get("anon") is not None and alloc:
                 cm = "%.0f/%.0fG" % (hum_gib(live["anon"]), hum_gib(alloc))
                 if live["anon"] / alloc > 0.9:
-                    cm = paint(cm, 38, 5, 203)
+                    cm = paint(cm, 38, 5, 160)
             elif j["mem"]:
                 cm = paint("?/%.0fG" % hum_gib(j["mem"]), 2)
             else:
