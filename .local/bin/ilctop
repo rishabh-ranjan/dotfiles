@@ -79,11 +79,11 @@ ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK = 31, 32, 33, 34, 35, 36, 30
 QOS_FG = {
     "il-interactive": RED,
-    "il": YELLOW,
+    "il": MAGENTA,           # magenta reads better than yellow on both themes
     "il-lo": BLACK,          # lowest priority, de-emphasised
     "il-cpu-long": CYAN,
     "normal": BLUE,
-    "dev": MAGENTA,
+    "dev": GREEN,
 }
 QOS_DEFAULT_FG = BLACK
 GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
@@ -385,7 +385,7 @@ def fmt_g(gib):
 
 
 def gutil_codes(u):
-    return (GREEN,) if u >= 70 else (YELLOW,) if u >= 30 else (RED,)
+    return (GREEN,) if u >= 70 else (MAGENTA,) if u >= 30 else (RED,)
 
 
 def vtrunc(s, n):
