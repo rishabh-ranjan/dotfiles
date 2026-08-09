@@ -592,8 +592,8 @@ def render(nodes, running, my, pending, cpus, width):
 
     L.append("")
     ghead = paint("gpus", 1)                 # qos key rides on this header line
-    L.append(ghead + " " * max(1, width - vlen(ghead) - vlen(swatches)) + swatches
-             if vlen(ghead) + 2 + vlen(swatches) <= width else ghead)
+    key = " (qos: " + swatches + ")"
+    L.append(ghead + (key if vlen(ghead) + vlen(key) <= width else ""))
     types = []
     for n in nlist:                          # keep types in gpu-order, families next
         t = nodes[n]["type"]
