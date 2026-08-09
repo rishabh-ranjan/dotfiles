@@ -478,20 +478,26 @@ def render(nodes, running, my, pending, cpus, width):
         total_type[nodes[n]["type"]] = total_type.get(nodes[n]["type"], 0) + nodes[n]["cap"]
     tt = sorted(total_type, key=lambda t: (GPU_TYPE_ORDER.index(t)
                 if t in GPU_TYPE_ORDER else len(GPU_TYPE_ORDER), t))
-    def free_cell(label, free, total):
-        col = 45 if free > 0 else 203       # cyan when something is available
-        return "%s %s/%d" % (paint(label, 2), paint(str(free), 38, 5, col), total)
+    def free_cells(rows):
+        """rows: [(label, free, total)] -> cells with columns aligned in-section."""
+        lw = max(len(r[0]) for r in rows)
+        fw = max(len(str(r[1])) for r in rows)
+        tw = max(len(str(r[2])) for r in rows)
+        return ["%s %s/%s" % (paint("%-*s" % (lw, r[0]), 2),
+                              pad(paint("%*d" % (fw, r[1]), 38, 5,
+                                        45 if r[1] > 0 else 203), fw, right=True),
+                              "%-*d" % (tw, r[2])) for r in rows]
 
-    parts = []
+    rows = []
     tot_all = used_all = 0
     for t in tt:
         u = used_type.get(t, 0)
         tot_all += total_type[t]
         used_all += u
-        parts.append(free_cell(t, total_type[t] - u, total_type[t]))
+        rows.append((t, total_type[t] - u, total_type[t]))
     L.append("")
-    L.append("free gpus " + paint("%d/%d" % (tot_all - used_all, tot_all), 1))
-    wrap_items(L, "  ", parts, width)
+    L.append("free gpus %d/%d" % (tot_all - used_all, tot_all))
+    pack_cells(L, free_cells(rows), width, gap=2, indent="  ")
 
     # ---- free cpus, broken down by node family ----
     fam_idle, fam_tot = {}, {}
@@ -500,11 +506,10 @@ def render(nodes, running, my, pending, cpus, width):
         fam_idle[fam] = fam_idle.get(fam, 0) + c["idle"]
         fam_tot[fam] = fam_tot.get(fam, 0) + c["total"]
     if fam_tot:
-        cparts = [free_cell(f, fam_idle[f], fam_tot[f])
-                  for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
-        L.append("free cpus " + paint("%d/%d" % (sum(fam_idle.values()),
-                                                 sum(fam_tot.values())), 1))
-        wrap_items(L, "  ", cparts, width)
+        crows = [(f, fam_idle[f], fam_tot[f])
+                 for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
+        L.append("free cpus %d/%d" % (sum(fam_idle.values()), sum(fam_tot.values())))
+        pack_cells(L, free_cells(crows), width, gap=2, indent="  ")
 
     # ---- user legend with per-user GPU breakdown (me first, then most-used) ----
     user_gpu, user_type = {}, {}
