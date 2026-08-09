@@ -659,7 +659,7 @@ def render(nodes, running, my, pending, cpus, width):
 
         def gpu_block(nl, gp):
             # the node name prefixes every GPU, which also visually separates them
-            head = paint("%-*s " % (gnode_w, nl), 2)
+            head = paint("%*s " % (gnode_w, nl), 2)
             if gp is None:
                 return head + paint("   ?       ?    ?", 2)
             mem = num("%.0f" % (gp["mu"] / 1024),
@@ -678,9 +678,9 @@ def render(nodes, running, my, pending, cpus, width):
             gps = live.get("gpus") or [(j["node"], None)] * j["gpu"]
             # the name is bold; the exclusivity marker deliberately is not
             excl = " (exclusive)" if j["excl"] else ""
-            L.append(("  %s %-*s  %s" % (pad(paint(shorten(nm, name_w), 1) + excl,
-                                             name_w + excl_w),
-                                         node_w, nl, cpu_block(j))).rstrip())
+            L.append(("  %s %*s  %s" % (pad(paint(shorten(nm, name_w), 1) + excl,
+                                            name_w + excl_w),
+                                        node_w, nl, cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it,
             # never mixing GPUs from different nodes in one row
             gnodes = []
