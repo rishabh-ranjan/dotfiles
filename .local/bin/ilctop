@@ -279,15 +279,32 @@ def get_my_jobs():
     return jobs
 
 
+def job_detail(jobid):
+    """Totals for one job straight from scontrol's ReqTRES (job-wide, exact).
+
+    squeue's MinMemory is ambiguous (per node, per cpu or per gpu), so the whole
+    request can only be read off ReqTRES.
+    """
+    if not jobid:
+        return {}
+    _, out = run(["scontrol", "show", "job", "-o", jobid], timeout=10)
+    d = dict(t.split("=", 1) for t in out.split() if "=" in t)
+    tres = dict(kv.split("=", 1) for kv in d.get("ReqTRES", "").split(",") if "=" in kv)
+    return dict(mem=parse_mem(tres["mem"]) if "mem" in tres else None,
+                cpu=int(tres.get("cpu", 0) or 0),
+                gpu=int(tres.get("gres/gpu", 0) or 0),
+                excl=d.get("OverSubscribe", "OK").upper() not in ("OK", "YES"))
+
+
 def get_pending():
     # Name last: it may contain our '|' delimiter (see get_my_jobs).
     _, out = run(["squeue", "-h", "-u", ME, "-t", "PD", "-O",
                   "UserName:|,QOS:|,tres-per-node:|,StartTime:|,NumCPUs:|,"
-                  "MinMemory:|,NumNodes:|,Name:|"])
+                  "MinMemory:|,NumNodes:|,JobID:|,Name:|"])
     pend = []
     for line in out.splitlines():
         f = line.split("|")
-        if len(f) < 8:
+        if len(f) < 9:
             continue
         user, qos, b, st = f[0].strip(), f[1].strip(), f[2].strip(), f[3].strip()
         rest = b[len("gres/gpu:"):] if b.startswith("gres/gpu:") else ""
@@ -298,12 +315,15 @@ def get_pending():
         else:
             t, _, c = rest.rpartition(":")
             gtype, cnt = t, int(c) if c.isdigit() else 1
+        detail = job_detail(f[8].strip() if len(f) > 8 else "")
         pend.append(dict(user=user, qos=qos, type=gtype, cnt=cnt,
+                         excl=detail.get("excl", False),
                          eta=parse_time(st),
-                         cpu=int(f[4].strip() or 0),
-                         mem=parse_mem(f[5].strip()) if f[5].strip() else None,
+                         cpu=detail.get("cpu") or int(f[4].strip() or 0),
+                         mem=detail.get("mem"),
+                         gpu=detail.get("gpu") or cnt,
                          nn=int(f[6].strip() or 1),
-                         name="|".join(f[7:]).strip().rstrip("|")))
+                         name="|".join(f[8:]).strip().rstrip("|")))
     return pend
 
 
@@ -594,7 +614,8 @@ def render(nodes, running, my, pending, cpus, width):
             labels.append(shorten(j["name"].rstrip("|"), 30))
             nodelbl.append(",".join(short_node(n) for n in (j["nodes"] or [])))
         name_w = max([len(x) for x in labels] or [1])
-        excl_w = 12 if any(j["excl"] for j in jobs) else 0   # " (exclusive)"
+        excl_w = 12 if (any(j["excl"] for j in jobs)
+                        or any(p.get("excl") for p in pending)) else 0
         node_w = max([len(x) for x in nodelbl] or [1])
         # width of a single node name, used to prefix each GPU below its job
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
@@ -603,9 +624,8 @@ def render(nodes, running, my, pending, cpus, width):
         name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
         run_w = max([len(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
-        want_w = max([len("%d×%s %dcpu %.0fG" % (p["cnt"] * max(1, p["nn"]),
-                                                 disp_type(p["type"]), p["cpu"],
-                                                 hum_gib(p["mem"] or 0) * max(1, p["nn"])))
+        want_w = max([len("%d×%s %dcpu %.0fG" % (p["gpu"], disp_type(p["type"]),
+                                                 p["cpu"], hum_gib(p["mem"] or 0)))
                       for p in pending] or [0])
 
         def num(s, hot=False):
@@ -725,8 +745,9 @@ def render(nodes, running, my, pending, cpus, width):
 
         def pend_line(L, p, want):
             # the name's colour already carries the qos, so it is not repeated
+            excl = " (exclusive)" if p.get("excl") else ""
             L.append(("  %s %s  %s" % (
-                pad(paint(shorten(p["name"], name_w), 1, *qos_codes(p["qos"])),
+                pad(paint(shorten(p["name"], name_w), 1, *qos_codes(p["qos"])) + excl,
                     name_w + excl_w),
                 pad(" ".join(want), want_w), fmt_eta(p["eta"], now))).rstrip())
 
@@ -749,12 +770,11 @@ def render(nodes, running, my, pending, cpus, width):
             sec_pending.append(paint("my pending", 1))
             for p in pend:
                 want = []
-                if p["cnt"]:
-                    want.append("%d×%s" % (p["cnt"] * max(1, p["nn"]),
-                                           disp_type(p["type"])))
+                if p["gpu"]:
+                    want.append("%d×%s" % (p["gpu"], disp_type(p["type"])))
                 want.append("%dcpu" % p["cpu"])
                 if p["mem"]:
-                    want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
+                    want.append("%.0fG" % hum_gib(p["mem"]))
                 pend_line(sec_pending, p, want)
 
     L = []
