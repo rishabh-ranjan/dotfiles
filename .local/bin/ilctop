@@ -131,11 +131,9 @@ def pad(s, n, right=False):
     return (fill + s) if right else (s + fill)
 
 
-def frac(num, den, nw, dw, codes=(), unit="", uw=0):
-    """num/den unit, with the slash and the unit each in a fixed column."""
-    # with a unit, the denominator is right-aligned so the unit hugs the number
-    out = pad(paint(num, *codes), nw, right=True) + "/" + pad(den, dw, right=bool(uw))
-    return out + (" " + pad(unit, uw) if uw else "")
+def frac(num, den, nw, dw, codes=()):
+    """Render num/den so the slash lands in the same column across a section."""
+    return pad(paint(num, *codes), nw, right=True) + pad("/" + den, dw)
 
 
 def qos_codes(q):
@@ -495,7 +493,7 @@ def render(nodes, running, my, pending, cpus, width):
         # key right-aligned; values aligned on their slash
         lw = max(len(r[0]) for r in rows)
         nw = max(len(str(r[1])) for r in rows)
-        dw = max(len(str(r[2])) for r in rows)
+        dw = max(len(str(r[2])) for r in rows) + 1
         return [pad(paint("%*s" % (lw, r[0]), 2), lw, right=True) + " "
                 + frac(str(r[1]), str(r[2]), nw, dw,
                        (CYAN if r[1] > 0 else RED,)) for r in rows]
@@ -624,38 +622,38 @@ def render(nodes, running, my, pending, cpus, width):
 
         cu_nw = max([len("%.1f" % (j.get("live") or {}).get("cores", 0))
                      for j in jobs] or [1])
-        cu_dw = max([len("%d" % j["cpu"]) for j in jobs] or [1])
+        cu_dw = max([len("/%dcpu" % j["cpu"]) for j in jobs] or [1])
         cm_nw = max([len("%.0f" % hum_gib((j.get("live") or {}).get("anon") or 0))
                      for j in jobs] or [1])
-        cm_dw = max([len("%.0f" % hum_gib(job_alloc(j) or 0)) for j in jobs] or [1])
+        cm_dw = max([len("/%.0fG" % hum_gib(job_alloc(j) or 0)) for j in jobs] or [1])
 
         def cpu_block(j):
             live = j.get("live") or {}
             cores = live.get("cores")
             cu = frac("%.1f" % cores if cores is not None else "?",
-                      "%d" % j["cpu"], cu_nw, cu_dw,
-                      (CYAN,) if cores is not None else (DIM,), "cpu", 3)
+                      "%dcpu" % j["cpu"], cu_nw, cu_dw,
+                      (CYAN,) if cores is not None else (DIM,))
             alloc = job_alloc(j)
             if live.get("anon") is not None and alloc:
                 hot = live["anon"] / alloc > 0.9
-                cm = frac("%.0f" % hum_gib(live["anon"]), "%.0f" % hum_gib(alloc),
-                          cm_nw, cm_dw, (RED,) if hot else (CYAN,), "G", 1)
+                cm = frac("%.0f" % hum_gib(live["anon"]), "%.0fG" % hum_gib(alloc),
+                          cm_nw, cm_dw, (RED,) if hot else (CYAN,))
             elif alloc:
-                cm = frac("?", "%.0f" % hum_gib(alloc), cm_nw, cm_dw, (DIM,), "G", 1)
+                cm = frac("?", "%.0fG" % hum_gib(alloc), cm_nw, cm_dw, (DIM,))
             else:
-                cm = pad(paint("?", DIM), cm_nw + cm_dw + 3, right=True)
+                cm = pad(paint("?", DIM), cm_nw + cm_dw, right=True)
             return cu + " " + cm
 
         def gpu_block(nl, gp):
             # the node name prefixes every GPU, which also visually separates them
             head = paint("%*s " % (gnode_w, nl), 2)
             if gp is None:
-                return head + paint("   ? %    ?/?   G     ? W", 2)
-            mem = frac("%.0f" % (gp["mu"] / 1024), "%.0f" % (gp["mt"] / 1024), 3, 4,
-                       (RED,) if gp["mu"] / gp["mt"] > 0.9 else (CYAN,), "G", 1)
-            return "%s%s %s %s W" % (head,
-                                     paint("%3.0f %%" % gp["util"], *gutil_codes(gp["util"])),
-                                     mem, "%3.0f" % gp["pw"])
+                return head + paint("   ?   ?" + " " * 6 + "   ?", 2)
+            mem = frac("%.0f" % (gp["mu"] / 1024), "%.0fG" % (gp["mt"] / 1024), 3, 6,
+                       (RED,) if gp["mu"] / gp["mt"] > 0.9 else (CYAN,))
+            return "%s%s %s %4s" % (head,
+                                    paint("%3.0f%%" % gp["util"], *gutil_codes(gp["util"])),
+                                    mem, "%3.0fW" % gp["pw"])
 
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
