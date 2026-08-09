@@ -76,16 +76,18 @@ ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
 # Plain 16-colour SGR foregrounds, picked by hand: single-character glyphs need
 # dark, saturated inks, and every terminal (and `watch`) renders these the same.
-RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK = 31, 32, 33, 34, 35, 36, 30
+RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK, DIM = 31, 32, 33, 34, 35, 36, 30, 2
+# Each entry is a full SGR code tuple, so "grey" can be dim rather than a
+# 16-colour bright black that not every terminal has.
 QOS_FG = {
-    "il-interactive": RED,
-    "il": GREEN,
-    "il-lo": BLACK,          # lowest priority, de-emphasised
-    "il-cpu-long": CYAN,
-    "normal": BLUE,
-    "dev": MAGENTA,
+    "il-interactive": (RED,),
+    "il": (GREEN,),
+    "il-lo": (DIM,),         # grey: lowest priority, de-emphasised
+    "il-cpu-long": (CYAN,),
+    "normal": (BLUE,),
+    "dev": (MAGENTA,),
 }
-QOS_DEFAULT_FG = BLACK
+QOS_DEFAULT_FG = (BLACK,)
 GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
 NODE_ABBREV = {"ampere": "a", "turing": "t", "hyperturing": "ht",
                "hyperion": "h", "blackwell": "bw"}
@@ -130,7 +132,7 @@ def pad(s, n, right=False):
 
 
 def qos_codes(q):
-    return (QOS_FG.get(q, QOS_DEFAULT_FG),)
+    return QOS_FG.get(q, QOS_DEFAULT_FG)
 
 
 def run(cmd, timeout=20):
@@ -471,7 +473,8 @@ def render(nodes, running, my, pending, cpus, width):
     # ---- qos colour key: shown right-justified on the gpus section header ----
     now = datetime.datetime.now()
     swatches = "  ".join(
-        paint(q, *qos_codes(q)) for q in ["il-interactive", "il", "il-lo"]
+        paint(q, *qos_codes(q))
+        for q in ["il-interactive", "il", "il-lo", "il-cpu-long"]
     )
 
     # ---- totals per gpu type ----
@@ -678,6 +681,8 @@ def render(nodes, running, my, pending, cpus, width):
         if not sec:
             continue
         if L:
+            L.append("")
+        if sec is sec_gpus:                  # extra breathing room before the map
             L.append("")
         L += sec
     return L
