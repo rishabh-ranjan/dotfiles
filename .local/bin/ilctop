@@ -759,6 +759,8 @@ def render(nodes, running, my, pending, cpus, width):
         if L:
             L.append("")
         L += sec
+        if sec is sec_gpus_free:             # extra gap before the gpu map
+            L.append("")
     return L
 
 
