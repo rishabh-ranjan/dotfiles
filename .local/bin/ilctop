@@ -23,9 +23,9 @@ Live numbers are read with a short `srun --overlap` into each of your jobs
 (nvidia-smi + cgroup-v2). The kernel only exposes your own GPUs to you, so
 everyone else is shown from the SLURM allocation view.
 
-Under `watch ilctop` the output keeps its colour and formatting: we detect the
-watch ancestor (stdout is a pipe there) and fold 256-colour codes down to the
-16-colour set that watch forwards.
+Colours are emitted as plain 16-colour SGR codes for maximum terminal
+compatibility; this is also what makes `watch ilctop` look exactly like a
+direct run (watch forwards those, but drops 256-colour sequences).
 """
 
 import argparse
@@ -151,11 +151,15 @@ def _downgrade(codes):
 
 
 def paint(s, *codes):
+    """Colour `s`, always emitting plain 16-colour SGR codes.
+
+    The palette is chosen in 256-colour space for precision, but every code is
+    folded down to the basic 16 so it renders identically everywhere -- and so
+    `watch`, which drops 38;5;N sequences, shows the same thing as a direct run.
+    """
     if not USE_COLOR or not codes:
         return s
-    if WATCH_MODE:
-        codes = _downgrade(codes)
-    return "\033[" + ";".join(str(c) for c in codes) + "m" + s + "\033[0m"
+    return "\033[" + ";".join(str(c) for c in _downgrade(codes)) + "m" + s + "\033[0m"
 
 
 def vlen(s):
@@ -515,7 +519,7 @@ def render(nodes, running, my, pending, cpus, width):
         used_all += u
         rows.append((disp_type(t), total_type[t] - u, total_type[t]))
     L.append("")
-    L.append("free gpus %d/%d" % (tot_all - used_all, tot_all))
+    L.append(paint("free gpus", 1) + " %d/%d" % (tot_all - used_all, tot_all))
     pack_cells(L, free_cells(rows), width, gap=2, indent="  ")
 
     # ---- free cpus, broken down by node family ----
@@ -527,7 +531,8 @@ def render(nodes, running, my, pending, cpus, width):
     if fam_tot:
         crows = [(f, fam_idle[f], fam_tot[f])
                  for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
-        L.append("free cpus %d/%d" % (sum(fam_idle.values()), sum(fam_tot.values())))
+        L.append(paint("free cpus", 1)
+                 + " %d/%d" % (sum(fam_idle.values()), sum(fam_tot.values())))
         pack_cells(L, free_cells(crows), width, gap=2, indent="  ")
 
     # ---- user legend with per-user GPU breakdown (me first, then most-used) ----
@@ -553,7 +558,8 @@ def render(nodes, running, my, pending, cpus, width):
         leg[-1] += paint("=%-*s" % (name_w, u), 2) + " " + split
     if leg:
         L.append("")
-        pack_cells(L, leg, width)
+        L.append(paint("users", 1))
+        pack_cells(L, leg, width, indent="  ")
 
     # ---- gpu map, packed into columns (one node family per row block) ----
     label_w = max(len(short_node(n)) for n in nodes)
@@ -583,13 +589,15 @@ def render(nodes, running, my, pending, cpus, width):
                                paint("%-*s" % (type_w, disp_type(nd["type"])), 2), g)
 
     L.append("")
+    L.append(paint("gpus", 1))
     fams = []
     for n in nlist:                          # keep families in first-seen order
         fam = natkey(n)[0]
         if fam not in fams:
             fams.append(fam)
     for fam in fams:                         # never mix families in one row
-        pack_cells(L, [node_cell(n) for n in nlist if natkey(n)[0] == fam], width)
+        pack_cells(L, [node_cell(n) for n in nlist if natkey(n)[0] == fam],
+                   width, indent="  ")
 
     # ---- my jobs -------------------------------------------------------------
     # One cell per job, same layout for CPU-only and GPU jobs: name, node,
@@ -632,15 +640,16 @@ def render(nodes, running, my, pending, cpus, width):
                                      "%3.0fW" % gp["pw"])
 
         # trim the name column until the job line fits the terminal
-        name_w = max(6, min(name_w, width - (node_w + 2 + 21)))
+        name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
         L.append("")
+        L.append(paint("my jobs", 1))
         for j, nm, nl in zip(jobs, labels, nodelbl):
             live = j.get("live") or {}
             gps = live.get("gpus") or ([None] * j["gpu"])
-            L.append(("%-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
-                                         cpu_block(j))).rstrip())
+            L.append(("  %-*s %-*s  %s" % (name_w, shorten(nm, name_w), node_w, nl,
+                                           cpu_block(j))).rstrip())
             # the job's GPUs go on their own indented line(s) below it
-            pack_cells(L, [gpu_block(nl, gp) for gp in gps], width, gap=3, indent="  ")
+            pack_cells(L, [gpu_block(nl, gp) for gp in gps], width, gap=3, indent="    ")
 
     # ---- pending ----
     groups = {}
