@@ -487,14 +487,11 @@ def render(nodes, running, my, pending, cpus, width):
     users = {k[0] for nd in counts for k in counts[nd]}
     chars, order = assign_chars(users)
 
-    # ---- header line: title + qos colour key ----
+    # ---- qos colour key: shown right-justified on the gpus section header ----
     now = datetime.datetime.now()
     swatches = "  ".join(
         paint(q, *qos_codes(q)) for q in ["il-interactive", "il", "il-lo"]
     )
-    head = paint("ilctop", 1) + paint("  " + now.strftime("%a %d %b %H:%M:%S"), 2)
-    L.append(head + ("   qos: " + swatches
-                     if vlen(head) + 8 + vlen(swatches) <= width else ""))
 
     # ---- totals per gpu type ----
     total_type = {}
@@ -518,7 +515,6 @@ def render(nodes, running, my, pending, cpus, width):
         tot_all += total_type[t]
         used_all += u
         rows.append((disp_type(t), total_type[t] - u, total_type[t]))
-    L.append("")
     L.append(paint("free gpus", 1) + " %d/%d" % (tot_all - used_all, tot_all))
     pack_cells(L, free_cells(rows), width, gap=2, indent="  ")
 
@@ -588,7 +584,9 @@ def render(nodes, running, my, pending, cpus, width):
         return "%-*s %s" % (label_w, short_node(n), g)
 
     L.append("")
-    L.append(paint("gpus", 1))
+    ghead = paint("gpus", 1)                 # qos key rides on this header line
+    L.append(ghead + " " * max(1, width - vlen(ghead) - vlen(swatches)) + swatches
+             if vlen(ghead) + 2 + vlen(swatches) <= width else ghead)
     types = []
     for n in nlist:                          # keep types in gpu-order, families next
         t = nodes[n]["type"]
