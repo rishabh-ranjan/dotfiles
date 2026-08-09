@@ -195,6 +195,13 @@ def parse_mem(s):
     return float(m.group(1)) * mult[m.group(2)]
 
 
+def parse_time(s):
+    try:
+        return datetime.datetime.strptime(s.strip(), "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        return None
+
+
 def natkey(name):
     m = re.match(r"([a-zA-Z]+)(\d*)", name)
     return (m.group(1), int(m.group(2) or 0)) if m else (name, 0)
@@ -289,11 +296,11 @@ def get_my_jobs():
     # Name queried LAST: job names can contain '|' (our delimiter); trailing
     # fields absorb the overflow instead of misaligning earlier columns.
     _, out = run(["squeue", "-h", "-u", ME, "-t", "R", "-O",
-                  "JobID:|,QOS:|,NodeList:|,tres-alloc:|,OverSubscribe:|,Name:|"])
+                  "JobID:|,QOS:|,NodeList:|,tres-alloc:|,OverSubscribe:|,StartTime:|,Name:|"])
     jobs = []
     for line in out.splitlines():
         f = line.split("|")
-        if len(f) < 6:
+        if len(f) < 7:
             continue
         tres = f[3]
         g = re.search(r"gres/gpu=(\d+)", tres)
@@ -307,18 +314,21 @@ def get_my_jobs():
             cpu=int(cpu.group(1)) if cpu else 0,
             mem=parse_mem(mem.group(1)) if mem else None,
             excl=f[4].strip().upper() not in ("OK", "YES", ""),
-            name="|".join(f[5:]).strip(),
+            start=parse_time(f[5].strip()),
+            name="|".join(f[6:]).strip(),
         ))
     return jobs
 
 
 def get_pending():
+    # Name last: it may contain our '|' delimiter (see get_my_jobs).
     _, out = run(["squeue", "-h", "-u", ME, "-t", "PD", "-O",
-                  "UserName:|,QOS:|,tres-per-node:|,StartTime:|"])
+                  "UserName:|,QOS:|,tres-per-node:|,StartTime:|,NumCPUs:|,"
+                  "MinMemory:|,NumNodes:|,Name:|"])
     pend = []
     for line in out.splitlines():
         f = line.split("|")
-        if len(f) < 4:
+        if len(f) < 8:
             continue
         user, qos, b, st = f[0].strip(), f[1].strip(), f[2].strip(), f[3].strip()
         rest = b[len("gres/gpu:"):] if b.startswith("gres/gpu:") else ""
@@ -329,11 +339,12 @@ def get_pending():
         else:
             t, _, c = rest.rpartition(":")
             gtype, cnt = t, int(c) if c.isdigit() else 1
-        try:
-            eta = datetime.datetime.strptime(st, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            eta = None
-        pend.append(dict(user=user, qos=qos, type=gtype, cnt=cnt, eta=eta))
+        pend.append(dict(user=user, qos=qos, type=gtype, cnt=cnt,
+                         eta=parse_time(st),
+                         cpu=int(f[4].strip() or 0),
+                         mem=parse_mem(f[5].strip()) if f[5].strip() else None,
+                         nn=int(f[6].strip() or 1),
+                         name="|".join(f[7:]).strip()))
     return pend
 
 
@@ -528,6 +539,7 @@ def render(nodes, running, my, pending, cpus, width):
         tot_all += total_type[t]
         used_all += u
         rows.append((disp_type(t), total_type[t] - u, total_type[t]))
+    sec_gpus_free = L = []
     L.append(paint("free gpus", 1) + " %d/%d" % (tot_all - used_all, tot_all))
     pack_cells(L, free_cells(rows), width, gap=2, indent="  ")
 
@@ -537,6 +549,7 @@ def render(nodes, running, my, pending, cpus, width):
         fam = natkey(n)[0]
         fam_idle[fam] = fam_idle.get(fam, 0) + c["idle"]
         fam_tot[fam] = fam_tot.get(fam, 0) + c["total"]
+    sec_cpus_free = L = []
     if fam_tot:
         crows = [(f, fam_idle[f], fam_tot[f])
                  for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
@@ -552,9 +565,8 @@ def render(nodes, running, my, pending, cpus, width):
             user_gpu[u] = user_gpu.get(u, 0) + n
             ut = user_type.setdefault(u, {})
             ut[t] = ut.get(t, 0) + n
-    leg_order = ([ME] if ME in order else []) + sorted(
-        (u for u in order if u != ME),
-        key=lambda u: (-user_gpu.get(u, 0), -user_cpu.get(u, 0), u))
+    # ordered by resource usage: gpus first, then cpus (me included, no special case)
+    leg_order = sorted(order, key=lambda u: (-user_gpu.get(u, 0), -user_cpu.get(u, 0), u))
     name_w = max([len(u) for u in leg_order] or [0])
     splits = {}
     for u in leg_order:
@@ -570,8 +582,8 @@ def render(nodes, running, my, pending, cpus, width):
         # cpus run inline with the gpu breakdown, not in a column of their own
         leg[-1] += (paint("=%-*s" % (name_w, u), 2) + " "
                     + " ".join(filter(None, [splits[u], "%dcpu" % user_cpu.get(u, 0)])))
+    sec_users = L = []
     if leg:
-        L.append("")
         L.append(paint("users", 1))
         pack_cells(L, leg, width, indent="  ")
 
@@ -602,7 +614,7 @@ def render(nodes, running, my, pending, cpus, width):
         return "%*s %s %s" % (label_w, short_node(n),
                               paint("%-*s" % (type_w, disp_type(nd["type"])), 2), g)
 
-    L.append("")
+    sec_gpus = L = []
     ghead = paint("gpus", 1)                 # qos key rides on this header line
     key = " (qos: " + swatches + ")"
     L.append(ghead + (key if vlen(ghead) + vlen(key) <= width else ""))
@@ -611,18 +623,26 @@ def render(nodes, running, my, pending, cpus, width):
     # ---- my jobs -------------------------------------------------------------
     # One cell per job, same layout for CPU-only and GPU jobs: name, node,
     # unified per-job CPU usage/memory, then one block per GPU it holds.
-    if my:
-        jobs = sorted(my, key=lambda j: (natkey(j["node"]), j["name"]))
+    sec_jobs = L = []
+    if my or pending:
+        # running jobs oldest-first, then the queue
+        jobs = sorted(my, key=lambda j: (j["start"] or now, j["name"]))
         labels, nodelbl = [], []
         for j in jobs:
             labels.append(shorten(j["name"].rstrip("|"), 30))
             nodelbl.append(",".join(short_node(n) for n in (j["nodes"] or [])))
-        name_w = max(len(x) for x in labels)
+        name_w = max([len(x) for x in labels] or [1])
         excl_w = 12 if any(j["excl"] for j in jobs) else 0   # " (exclusive)"
-        node_w = max(len(x) for x in nodelbl)
+        node_w = max([len(x) for x in nodelbl] or [1])
         # width of a single node name, used to prefix each GPU below its job
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
                       or [1])
+        name_w = max(name_w, max([len(shorten(p["name"], 30)) for p in pending] or [0]))
+        qos_w = max([len(p["qos"]) for p in pending] or [0])
+        want_w = max([len("%d×%s %dcpu %.0fG" % (p["cnt"] * max(1, p["nn"]),
+                                                 disp_type(p["type"]), p["cpu"],
+                                                 hum_gib(p["mem"] or 0) * max(1, p["nn"])))
+                      for p in pending] or [0])
 
         def num(s, hot=False):
             """Numerators are inked like the free counts; red when nearly full."""
@@ -657,7 +677,6 @@ def render(nodes, running, my, pending, cpus, width):
 
         # trim the name column until the job line fits the terminal
         name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
-        L.append("")
         L.append(paint("my jobs", 1))
         for j, nm, nl in zip(jobs, labels, nodelbl):
             live = j.get("live") or {}
@@ -678,30 +697,26 @@ def render(nodes, running, my, pending, cpus, width):
                 pack_cells(L, [gpu_block(short_node(n), gp) for n, gp in gps if n == gn],
                            width, gap=3, indent="    ")
 
-    # ---- pending ----
-    groups = {}
-    for p in pending:
-        key = (p["type"], p["cnt"], p["qos"])
-        gr = groups.setdefault(key, dict(n=0, eta=None, mine=False))
-        gr["n"] += 1
-        gr["mine"] = gr["mine"] or (p["user"] == ME)
-        if p["eta"] and (gr["eta"] is None or p["eta"] < gr["eta"]):
-            gr["eta"] = p["eta"]
-    if groups:
-        L.append("")
-        L.append(paint("pending", 1) + paint(" · %d jobs" % sum(g["n"] for g in groups.values()), 2))
-        ordered = sorted(groups.items(),
-                         key=lambda kv: (kv[1]["eta"] is None, kv[1]["eta"] or now))
-        items = []
-        for (gtype, cnt, qos), gr in ordered:
-            label = "cpu" if gtype == "cpu" else "%d×%s" % (cnt, disp_type(gtype))
-            star = paint("*", 1) if gr["mine"] else ""
-            eta = fmt_eta(gr["eta"], now)
-            items.append("%s× %s %s%s → %s"
-                         % (paint(str(gr["n"]), 1), label,
-                            paint(qos, *qos_codes(qos)), star, eta))
-        wrap_items(L, "", items, width, gap=3)
+        # ---- pending jobs: one line each, after everything that is running ----
+        for p in sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now)):
+            want = []
+            if p["cnt"]:
+                want.append("%d×%s" % (p["cnt"] * max(1, p["nn"]), disp_type(p["type"])))
+            want.append("%dcpu" % p["cpu"])
+            if p["mem"]:
+                want.append("%.0fG" % hum_gib(p["mem"] * max(1, p["nn"])))
+            L.append("  %s %s  %s  %s" % (
+                pad(paint(shorten(p["name"], name_w), 1), name_w + excl_w),
+                pad(paint(p["qos"], *qos_codes(p["qos"])), qos_w, right=True),
+                pad(" ".join(want), want_w), fmt_eta(p["eta"], now)))
 
+    L = []
+    for sec in (sec_cpus_free, sec_users, sec_gpus_free, sec_jobs, sec_gpus):
+        if not sec:
+            continue
+        if L:
+            L.append("")
+        L += sec
     return L
 
 
