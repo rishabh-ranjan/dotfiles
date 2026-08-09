@@ -742,8 +742,8 @@ def render(nodes, running, my, pending, cpus, width):
                           ["%d×%s" % (p["cnt"] * max(1, p["nn"]), disp_type(p["type"]))])
 
     L = []
-    for sec in (sec_cpus_free, sec_cpus_mine, sec_users,
-                sec_gpus_free, sec_gpus_mine, sec_gpus):
+    for sec in (sec_users, sec_cpus_free, sec_gpus_free,
+                sec_gpus, sec_cpus_mine, sec_gpus_mine):
         if not sec:
             continue
         if L:
