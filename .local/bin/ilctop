@@ -74,17 +74,18 @@ USE_COLOR = ((sys.stdout.isatty() or "FORCE_COLOR" in os.environ or WATCH_MODE)
              and "NO_COLOR" not in os.environ)
 ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
-# QoS -> 256-colour foreground. Deliberately dark, saturated inks: the glyphs
-# are single characters, so light tints (pale grey/yellow) are hard to read.
+# Plain 16-colour SGR foregrounds, picked by hand: single-character glyphs need
+# dark, saturated inks, and every terminal (and `watch`) renders these the same.
+RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK = 31, 32, 33, 34, 35, 36, 30
 QOS_FG = {
-    "il-interactive": 160,   # red
-    "il": 166,               # orange
-    "il-lo": 16,             # black (lowest priority, de-emphasised)
-    "il-cpu-long": 23,       # dark teal
-    "normal": 19,            # dark blue
-    "dev": 90,               # dark magenta
+    "il-interactive": RED,
+    "il": YELLOW,
+    "il-lo": BLACK,          # lowest priority, de-emphasised
+    "il-cpu-long": CYAN,
+    "normal": BLUE,
+    "dev": MAGENTA,
 }
-QOS_DEFAULT_FG = 16
+QOS_DEFAULT_FG = BLACK
 GPU_TYPE_ORDER = ["b200", "a100", "rtx8000", "2080ti", "titanxp"]
 NODE_ABBREV = {"ampere": "a", "turing": "t", "hyperturing": "ht",
                "hyperion": "h", "blackwell": "bw"}
@@ -111,55 +112,11 @@ def term_width():
         return shutil.get_terminal_size((120, 40)).columns
 
 
-def _xterm_rgb(i):
-    if i < 16:
-        return None
-    if i >= 232:
-        v = 8 + 10 * (i - 232)
-        return (v, v, v)
-    i -= 16
-    lv = [0, 95, 135, 175, 215, 255]
-    return (lv[i // 36], lv[(i % 36) // 6], lv[i % 6])
-
-
-def _basic(i):
-    """Nearest 16-colour SGR code for a 256-colour index (`watch` drops 38;5;N)."""
-    rgb = _xterm_rgb(i)
-    if rgb is None:
-        return 30 + (i % 8) + (60 if i >= 8 else 0)
-    best, bestd = 37, None
-    for idx, ref in enumerate([(0, 0, 0), (170, 0, 0), (0, 170, 0), (170, 85, 0),
-                               (0, 0, 170), (170, 0, 170), (0, 170, 170), (170, 170, 170),
-                               (85, 85, 85), (255, 85, 85), (85, 255, 85), (255, 255, 85),
-                               (85, 85, 255), (255, 85, 255), (85, 255, 255), (255, 255, 255)]):
-        d = sum((a - b) ** 2 for a, b in zip(rgb, ref))
-        if bestd is None or d < bestd:
-            best, bestd = idx, d
-    return (30 + best) if best < 8 else (90 + best - 8)
-
-
-def _downgrade(codes):
-    out, i = [], 0
-    while i < len(codes):
-        if codes[i] == 38 and i + 2 < len(codes) and codes[i + 1] == 5:
-            out.append(_basic(codes[i + 2]))
-            i += 3
-        else:
-            out.append(codes[i])
-            i += 1
-    return out
-
-
 def paint(s, *codes):
-    """Colour `s`, always emitting plain 16-colour SGR codes.
-
-    The palette is chosen in 256-colour space for precision, but every code is
-    folded down to the basic 16 so it renders identically everywhere -- and so
-    `watch`, which drops 38;5;N sequences, shows the same thing as a direct run.
-    """
+    """Colour `s`; the palette is 16-colour throughout (see QOS_FG)."""
     if not USE_COLOR or not codes:
         return s
-    return "\033[" + ";".join(str(c) for c in _downgrade(codes)) + "m" + s + "\033[0m"
+    return "\033[" + ";".join(str(c) for c in codes) + "m" + s + "\033[0m"
 
 
 def vlen(s):
@@ -173,7 +130,7 @@ def pad(s, n, right=False):
 
 
 def qos_codes(q):
-    return (38, 5, QOS_FG.get(q, QOS_DEFAULT_FG))
+    return (QOS_FG.get(q, QOS_DEFAULT_FG),)
 
 
 def run(cmd, timeout=20):
@@ -428,7 +385,7 @@ def fmt_g(gib):
 
 
 def gutil_codes(u):
-    return (38, 5, 28) if u >= 70 else (38, 5, 172) if u >= 30 else (38, 5, 160)
+    return (GREEN,) if u >= 70 else (YELLOW,) if u >= 30 else (RED,)
 
 
 def vtrunc(s, n):
@@ -529,7 +486,7 @@ def render(nodes, running, my, pending, cpus, width):
         lw = max(len(r[0]) for r in rows)
         vw = max(len("%d/%d" % (r[1], r[2])) for r in rows)
         return [pad(paint("%*s" % (lw, r[0]), 2), lw, right=True) + " "
-                + pad(paint(str(r[1]), 38, 5, 30 if r[1] > 0 else 160)
+                + pad(paint(str(r[1]), CYAN if r[1] > 0 else RED)
                       + "/%d" % r[2], vw) for r in rows]
 
     rows = []
@@ -608,7 +565,7 @@ def render(nodes, running, my, pending, cpus, width):
                     break
                 g += paint(chars.get(u, "?"), *(qos_codes(q) + ((1,) if u == ME else ())))
                 drawn += 1
-        free_ch, free_codes = (".", (2,)) if avail else ("x", (38, 5, 160))
+        free_ch, free_codes = (".", (2,)) if avail else ("x", (RED,))
         g += "".join(paint(free_ch, *free_codes) for _ in range(cap - drawn))
         g += " " * (glyph_w - cap)
         return "%*s %s %s" % (label_w, short_node(n),
@@ -647,7 +604,7 @@ def render(nodes, running, my, pending, cpus, width):
 
         def num(s, hot=False):
             """Numerators are inked like the free counts; red when nearly full."""
-            return paint(s, 38, 5, 160 if hot else 30)
+            return paint(s, RED if hot else CYAN)
 
         def cpu_block(j):
             live = j.get("live") or {}
