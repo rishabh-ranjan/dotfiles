@@ -713,8 +713,9 @@ def render(nodes, running, my, pending, cpus, width):
                     # starts one cell in, so its block is visually detached
                     start = lead_n if first else (1 if new_node and k > 1 else 0)
                     row, cells = cells[:k - start], cells[k - start:]
-                    line = indent + (pad(head, stops[start]) if first
-                                     else " " * stops[start])
+                    # the name hangs two columns left of the gpu grid
+                    line = ("  " + pad(head, stops[start] + len(indent) - 2) if first
+                            else indent + " " * stops[start])
                     new_node = False
                     for i, c in enumerate(row):
                         col = start + i
