@@ -544,8 +544,9 @@ def render(nodes, running, my, pending, cpus, width):
         used_all += u
         rows.append((disp_type(t), total_type[t] - u, total_type[t]))
     sec_gpus_free = L = []
-    L.append(paint("free gpus", 1) + " " + paint("%d" % (tot_all - used_all), BLACK)
-             + paint("/%d" % tot_all, GRAY))
+    L.append(paint("free gpus", 1) + " " + paint("(", GRAY)
+             + paint("%d" % (tot_all - used_all), BLACK)
+             + paint("/%d)" % tot_all, GRAY))
     pack_cells(L, free_cells(rows), width, gap=2, indent="  ")
 
     # ---- free cpus, broken down by node family ----
@@ -558,8 +559,9 @@ def render(nodes, running, my, pending, cpus, width):
     if fam_tot:
         crows = [(f, fam_idle[f], fam_tot[f])
                  for f in sorted(fam_tot, key=lambda f: (-fam_tot[f], f))]
-        L.append(paint("free cpus", 1) + " " + paint("%d" % sum(fam_idle.values()), BLACK)
-                 + paint("/%d" % sum(fam_tot.values()), GRAY))
+        L.append(paint("free cpus", 1) + " " + paint("(", GRAY)
+                 + paint("%d" % sum(fam_idle.values()), BLACK)
+                 + paint("/%d)" % sum(fam_tot.values()), GRAY))
         pack_cells(L, free_cells(crows), width, gap=2, indent="  ")
 
     # ---- user legend with per-user GPU breakdown (me first, then most-used) ----
@@ -777,13 +779,17 @@ def render(nodes, running, my, pending, cpus, width):
         # every running job appears under "my cpus" with its cpu usage; the ones
         # holding gpus appear again under "my gpus", there with gpu numbers only
         if triples:
-            sec_cpus_mine.append(paint("my running", 1))
+            sec_cpus_mine.append(paint("my running", 1) + " " + paint("(", GRAY)
+                                 + paint("%d" % len(triples), BLACK) + paint(")", GRAY))
             pack_cells(sec_cpus_mine, [cpu_cell(j, nm, nl) for j, nm, nl in triples],
                        width, indent="  ")
 
         gpu_triples = [x for x in triples if x[0]["gpu"] > 0]
         if gpu_triples:
-            sec_gpus_mine.append(paint("my gpus", 1))
+            sec_gpus_mine.append(
+                paint("my gpus", 1) + " " + paint("(", GRAY)
+                + paint("%d" % sum(j["gpu"] for j, _nm, _nl in gpu_triples), BLACK)
+                + paint(")", GRAY))
             # multi-gpu jobs keep a grid of their own; single-gpu jobs are one
             # line each, so they are packed into columns together instead
             singles = []
@@ -799,7 +805,9 @@ def render(nodes, running, my, pending, cpus, width):
 
         # queued jobs get a section of their own
         pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
-        sec_pending.append(paint("my pending", 1))
+        sec_pending.append(paint("my pending", 1) + " " + paint("(", GRAY)
+                           + paint("%d" % len(pend), BLACK)
+                           + paint(")", GRAY))
         for p in pend:
             want = []
             if p["gpu"]:
