@@ -119,3 +119,8 @@ exposed = { wandb = "wandb", wb = "wb" }
 channels = ["conda-forge"]
 dependencies = { uv = "*" }
 exposed = { uv = "uv", uvx = "uvx" }
+
+[envs.watch]
+channels = ["conda-forge"]
+dependencies = { watch = "*" }
+exposed = { watch = "watch" }
