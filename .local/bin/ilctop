@@ -84,7 +84,7 @@ RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK = 31, 32, 33, 34, 35, 36, 30
 # units, allocations and labels
 GRAY = 90
 ITALIC = 3                       # marks exclusive (whole-node) allocations
-NAME_MAX = 15                  # job names are truncated to this width
+NAME_MAX = 16                # job names are truncated to this width
 # Only the dark half of the palette (30-37) inks the glyphs: the bright
 # variants wash out, which is what makes single characters hard to read.
 QOS_FG = {
