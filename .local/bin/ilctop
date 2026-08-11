@@ -152,16 +152,12 @@ QOS_ORDER = ["il-interactive", "il", "il-lo", "il-cpu-long"]
 
 
 def qos_split(pairs):
-    """`(qos, n)` pairs -> " = 8 il-interactive  4 il", inked per qos.
-
-    Returns "" when the split says nothing the total does not already say,
-    i.e. when a single qos holds everything.
-    """
+    """`(qos, n)` pairs -> " = 8 il-interactive  4 il", inked per qos."""
     tot = {}
     for q, n in pairs:
         if n:
             tot[q] = tot.get(q, 0) + n
-    if len(tot) < 2:
+    if not tot:
         return ""
     qs = sorted(tot, key=lambda q: (QOS_ORDER.index(q) if q in QOS_ORDER
                                     else len(QOS_ORDER), q))
