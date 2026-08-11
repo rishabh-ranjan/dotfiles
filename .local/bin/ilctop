@@ -148,6 +148,27 @@ def qos_codes(q):
     return QOS_FG.get(q, QOS_DEFAULT_FG)
 
 
+QOS_ORDER = ["il-interactive", "il", "il-lo", "il-cpu-long"]
+
+
+def qos_split(pairs):
+    """`(qos, n)` pairs -> " = 8 il-interactive  4 il", inked per qos.
+
+    Returns "" when the split says nothing the total does not already say,
+    i.e. when a single qos holds everything.
+    """
+    tot = {}
+    for q, n in pairs:
+        if n:
+            tot[q] = tot.get(q, 0) + n
+    if len(tot) < 2:
+        return ""
+    qs = sorted(tot, key=lambda q: (QOS_ORDER.index(q) if q in QOS_ORDER
+                                    else len(QOS_ORDER), q))
+    return paint(" = ", GRAY) + paint("  ", GRAY).join(
+        paint("%d" % tot[q], BLACK) + " " + paint(q, *qos_codes(q)) for q in qs)
+
+
 def run(cmd, timeout=20):
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
@@ -780,7 +801,9 @@ def render(nodes, running, my, pending, cpus, width):
         # holding gpus appear again under "my gpus", there with gpu numbers only
         if triples:
             sec_cpus_mine.append(paint("my running", 1) + " " + paint("(", GRAY)
-                                 + paint("%d" % len(triples), BLACK) + paint(")", GRAY))
+                                 + paint("%d" % len(triples), BLACK)
+                                 + qos_split([(j["qos"], 1) for j, _nm, _nl in triples])
+                                 + paint(")", GRAY))
             pack_cells(sec_cpus_mine, [cpu_cell(j, nm, nl) for j, nm, nl in triples],
                        width, indent="  ")
 
@@ -789,6 +812,7 @@ def render(nodes, running, my, pending, cpus, width):
             sec_gpus_mine.append(
                 paint("my gpus", 1) + " " + paint("(", GRAY)
                 + paint("%d" % sum(j["gpu"] for j, _nm, _nl in gpu_triples), BLACK)
+                + qos_split([(j["qos"], j["gpu"]) for j, _nm, _nl in gpu_triples])
                 + paint(")", GRAY))
             # multi-gpu jobs keep a grid of their own; single-gpu jobs are one
             # line each, so they are packed into columns together instead
@@ -807,6 +831,7 @@ def render(nodes, running, my, pending, cpus, width):
         pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
         sec_pending.append(paint("my pending", 1) + " " + paint("(", GRAY)
                            + paint("%d" % len(pend), BLACK)
+                           + qos_split([(p["qos"], 1) for p in pend])
                            + paint(")", GRAY))
         for p in pend:
             want = []
