@@ -161,7 +161,7 @@ def qos_split(pairs):
         return ""
     qs = sorted(tot, key=lambda q: (QOS_ORDER.index(q) if q in QOS_ORDER
                                     else len(QOS_ORDER), q))
-    return paint(" = ", GRAY) + paint("  ", GRAY).join(
+    return paint("  ", GRAY).join(
         paint("%d" % tot[q], BLACK) + " " + paint(q, *qos_codes(q)) for q in qs)
 
 
@@ -796,10 +796,10 @@ def render(nodes, running, my, pending, cpus, width):
         # every running job appears under "my cpus" with its cpu usage; the ones
         # holding gpus appear again under "my gpus", there with gpu numbers only
         if triples:
-            sec_cpus_mine.append(paint("my running", 1) + " " + paint("(", GRAY)
-                                 + paint("%d" % len(triples), BLACK)
-                                 + qos_split([(j["qos"], 1) for j, _nm, _nl in triples])
-                                 + paint(")", GRAY))
+            sec_cpus_mine.append(
+                paint("my running", 1) + " " + paint("(", GRAY)
+                + qos_split([(j["qos"], 1) for j, _nm, _nl in triples])
+                + paint(")", GRAY))
             pack_cells(sec_cpus_mine, [cpu_cell(j, nm, nl) for j, nm, nl in triples],
                        width, indent="  ")
 
@@ -807,7 +807,6 @@ def render(nodes, running, my, pending, cpus, width):
         if gpu_triples:
             sec_gpus_mine.append(
                 paint("my gpus", 1) + " " + paint("(", GRAY)
-                + paint("%d" % sum(j["gpu"] for j, _nm, _nl in gpu_triples), BLACK)
                 + qos_split([(j["qos"], j["gpu"]) for j, _nm, _nl in gpu_triples])
                 + paint(")", GRAY))
             # multi-gpu jobs keep a grid of their own; single-gpu jobs are one
@@ -826,7 +825,6 @@ def render(nodes, running, my, pending, cpus, width):
         # queued jobs get a section of their own
         pend = sorted(pending, key=lambda p: (p["eta"] is None, p["eta"] or now))
         sec_pending.append(paint("my pending", 1) + " " + paint("(", GRAY)
-                           + paint("%d" % len(pend), BLACK)
                            + qos_split([(p["qos"], 1) for p in pend])
                            + paint(")", GRAY))
         for p in pend:
