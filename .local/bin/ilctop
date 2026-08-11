@@ -152,7 +152,7 @@ QOS_ORDER = ["il-interactive", "il", "il-lo", "il-cpu-long"]
 
 
 def qos_split(pairs):
-    """`(qos, n)` pairs -> " = 8 il-interactive  4 il", inked per qos."""
+    """`(qos, n)` pairs -> "8 il-interactive, 4 il", inked per qos."""
     tot = {}
     for q, n in pairs:
         if n:
@@ -161,7 +161,7 @@ def qos_split(pairs):
         return ""
     qs = sorted(tot, key=lambda q: (QOS_ORDER.index(q) if q in QOS_ORDER
                                     else len(QOS_ORDER), q))
-    return paint("  ", GRAY).join(
+    return paint(", ", GRAY).join(
         paint("%d" % tot[q], BLACK) + " " + paint(q, *qos_codes(q)) for q in qs)
 
 
