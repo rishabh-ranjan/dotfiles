@@ -528,11 +528,13 @@ def render(nodes, running, my, pending, cpus, width):
     users = {k[0] for nd in counts for k in counts[nd]} | set(user_cpu)
     chars, order = assign_chars(users)
 
-    # ---- qos colour key: shown right-justified on the gpus section header ----
+    # ---- qos colour key: shown on the gpus section header. The cluster-wide
+    # split of the gpus in use doubles as the key, since each count is inked
+    # with its own qos; the italic marker still needs spelling out.
     now = datetime.datetime.now()
-    swatches = "  ".join(
-        [paint(q, *qos_codes(q))
-         for q in ["il-interactive", "il", "il-lo", "il-cpu-long"]]
+    split = qos_split([(k[1], n) for nd in counts for k, n in counts[nd].items()])
+    swatches = paint(", ", GRAY).join(
+        ([split] if split else [paint(q, *qos_codes(q)) for q in QOS_ORDER])
         + [paint("exclusive", ITALIC)]     # the marker shown in its own style
     )
 
@@ -642,7 +644,7 @@ def render(nodes, running, my, pending, cpus, width):
 
     sec_gpus = L = []
     ghead = paint("gpus", 1)                 # the key rides on this header line
-    key = " (legend: " + swatches + ")"
+    key = " " + paint("(", GRAY) + swatches + paint(")", GRAY)
     L.append(ghead + (key if vlen(ghead) + vlen(key) <= width else ""))
     pack_cells(L, [node_cell(n) for n in nlist], width, indent="  ")
 
