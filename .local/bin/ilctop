@@ -876,19 +876,19 @@ def fmt_dur(secs):
 
 
 def fmt_eta(dt, now):
+    """How long until the job starts, to the minute; the clock time is noise."""
     if dt is None:
         return paint("—", GRAY)
-    delta = (dt - now).total_seconds()
-    hm = dt.strftime("%H:%M") if dt.date() == now.date() else dt.strftime("%m-%d %H:%M")
-    if delta < 0:
-        rel = "now"
-    elif delta < 3600:
-        rel = "%dm" % (delta / 60)
-    elif delta < 86400:
-        rel = "%.0fh" % (delta / 3600)
-    else:
-        rel = "%.0fd" % (delta / 86400)
-    return "%s %s" % (hm, paint("(" + rel + ")", GRAY))
+    m = int((dt - now).total_seconds() // 60)
+    if m < 0:
+        return paint("now", GRAY)
+    if m < 60:
+        return paint("%dm" % m, GRAY)
+    h, m = divmod(m, 60)
+    if h < 24:
+        return paint("%dh%02dm" % (h, m), GRAY)
+    d, h = divmod(h, 24)
+    return paint("%dd%02dh%02dm" % (d, h, m), GRAY)
 
 
 def build(no_live):
