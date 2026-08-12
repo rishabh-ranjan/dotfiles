@@ -706,14 +706,14 @@ def render(nodes, running, my, pending, cpus, width):
             # once the rest of the cell is known (see "adaptive name column")
             labels.append(j["name"].rstrip("|"))
             nodelbl.append(",".join(short_node(n) for n in (j["nodes"] or [])))
-        name_w = max([len(x) for x in labels] or [1])
         node_w = max([len(x) for x in nodelbl] or [1])
         # width of a single node name, used to prefix each GPU below its job
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
                       or [1])
         triples = list(zip(jobs, labels, nodelbl))
-        name_w = want_name = max(name_w, max([len(p["name"])
-                                              for p in pending] or [0]))
+        # each section sizes its own name column: they are read one at a time,
+        # and a cramped section has no business trimming a roomy one
+        nw_run = nw_gpu = nw_pend = NAME_MAX
         run_w = max([vlen(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
         want_w = max([len("%d×%s %dc %.0fG" % (p["gpu"], disp_type(p["type"]),
@@ -796,7 +796,7 @@ def render(nodes, running, my, pending, cpus, width):
         def cpu_cell(j, nm, nl):
             run_for = fmt_dur((now - j["start"]).total_seconds()) if j["start"] else "?"
             # the node is context, the runtime is a number worth reading
-            return "%s %s %s %s" % (job_name(j, nm, name_w),
+            return "%s %s %s %s" % (job_name(j, nm, nw_run),
                                     pad(paint(nl, GRAY), node_w, right=True),
                                     cpu_block(j),
                                     pad(run_for, run_w, right=True))
@@ -807,7 +807,7 @@ def render(nodes, running, my, pending, cpus, width):
             return live.get("gpus") or [(j["node"], None)] * j["gpu"]
 
         def gpu_lines(L, j, nm):
-            grid_lines(L, job_name(j, nm, name_w).rstrip(),
+            grid_lines(L, job_name(j, nm, nw_gpu).rstrip(),
                        [gpu_block(short_node(n), gp) for n, gp in job_gpus(j)],
                        width)
 
@@ -815,7 +815,7 @@ def render(nodes, running, my, pending, cpus, width):
             # same ink as running jobs; the qos is not repeated here
             codes = (1,) + qos_codes(p["qos"]) + ((ITALIC,) if p.get("excl") else ())
             return "%s %s  %s" % (
-                pad(paint(shorten(p["name"], name_w), *codes), name_w),
+                pad(paint(shorten(p["name"], nw_pend), *codes), nw_pend),
                 pad(" ".join(want), want_w), pad(fmt_eta(p["eta"], now), eta_w))
 
         gpu_triples = [x for x in triples if x[0]["gpu"] > 0]
@@ -823,34 +823,34 @@ def render(nodes, running, my, pending, cpus, width):
         def single_cell(j, nm):
             gps = job_gpus(j)
             n, gp = gps[0] if gps else (j["node"], None)
-            return job_name(j, nm, name_w) + " " + gpu_block(short_node(n), gp)
+            return job_name(j, nm, nw_gpu) + " " + gpu_block(short_node(n), gp)
 
         # ---- adaptive name column ---------------------------------------
-        # Names are worth as much room as the layout can spare: measure each
-        # section at the floor width, then give the column all the slack that
-        # is left once the outer columns keep COL_GAP_MIN blanks between them.
-        # NAME_MAX is only a floor -- a cramped terminal never trims below it.
-        name_w = NAME_MAX
-
-        def cap_name(cells, indent, gap=3):
-            # the cell is the name plus a fixed remainder: whatever room the
+        # Names are worth as much room as the layout can spare: measure a
+        # section at the floor width, then give its name column all the slack
+        # that is left once the outer columns keep COL_GAP_MIN blanks between
+        # them. NAME_MAX is only a floor -- a cramped section never trims
+        # below it, and each section is sized on its own.
+        def fit_name(cells, want, indent, gap=3):
+            # a cell is the name plus a fixed remainder, so whatever room the
             # column layout grants beyond that remainder is the name's
-            rest = max(vlen(c) for c in cells) - name_w
-            return fit_cell_width(cells, width, indent, gap) - rest
+            if not cells:
+                return NAME_MAX
+            rest = max(vlen(c) for c in cells) - NAME_MAX
+            room = fit_cell_width(cells, width, indent, gap) - rest
+            return min(want, max(NAME_MAX, room))
 
-        caps = []
-        if triples:
-            caps.append(cap_name([cpu_cell(j, nm, nl)
-                                  for j, nm, nl in triples], 2))
-        singles_probe = [single_cell(j, nm) for j, nm, _nl in gpu_triples
-                         if len(job_gpus(j)) <= 1]
-        if singles_probe:
-            caps.append(cap_name(singles_probe, 2))
-        if pending:
-            # grid_lines never justifies, so its gap has to be the real one
-            caps.append(cap_name([pend_cell(p, [""]) for p in pending], 4,
-                                 gap=COL_GAP_MIN))
-        name_w = min(want_name, max(NAME_MAX, min(caps)) if caps else NAME_MAX)
+        single_tri = [x for x in gpu_triples if len(job_gpus(x[0])) <= 1]
+        nw_run = fit_name([cpu_cell(j, nm, nl) for j, nm, nl in triples],
+                          max([len(nm) for _j, nm, _nl in triples] or [1]), 2)
+        # multi-gpu jobs only wear the name as a label, so the packed
+        # single-gpu cells are what the gpu section is sized on
+        nw_gpu = fit_name([single_cell(j, nm) for j, nm, _nl in single_tri],
+                          max([len(nm) for _j, nm, _nl in gpu_triples] or [1]), 2)
+        # grid_lines never justifies, so its gap has to be the real one
+        nw_pend = fit_name([pend_cell(p, [""]) for p in pending],
+                           max([len(p["name"]) for p in pending] or [1]), 4,
+                           gap=COL_GAP_MIN)
 
         # every running job appears under "my cpus" with its cpu usage; the ones
         # holding gpus appear again under "my gpus", there with gpu numbers only
