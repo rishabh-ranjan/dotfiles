@@ -502,6 +502,35 @@ def pack_cells(L, cells, width, gap=3, indent=""):
         L.append(line.rstrip())
 
 
+def grid_lines(L, head, cells, width, indent="    ", gap=3):
+    """A label on the left, its cells tiled in a fixed grid to the right.
+
+    Columns are never justified, so the rows stay aligned however few cells the
+    last one holds; the label takes as few leading columns as it needs, and the
+    grid wraps underneath it.
+    """
+    if not cells:
+        L.append(indent + head)
+        return
+    cw = max(vlen(c) for c in cells)
+    step = cw + gap
+    k = max(1, (width - len(indent) + gap) // step)
+    if k == 1:                       # no room beside the label at all
+        L.append("  " + head)
+        lead = 0
+    else:
+        lead = max(1, min(k - 1, -(-(vlen(head) + 2 - len(indent)) // step)))
+    first = lead > 0
+    while cells:
+        start = lead if first else 0
+        row, cells = cells[:k - start], cells[k - start:]
+        line = ("  " + pad(head, start * step + len(indent) - 2) if first
+                else indent)
+        line += (" " * gap).join(pad(c, cw) for c in row)
+        L.append(line.rstrip())
+        first = False
+
+
 def render(nodes, running, my, pending, cpus, width):
     L = []
 
@@ -765,44 +794,16 @@ def render(nodes, running, my, pending, cpus, width):
             return live.get("gpus") or [(j["node"], None)] * j["gpu"]
 
         def gpu_lines(L, j, nm):
-            cells = [gpu_block(short_node(n), gp) for n, gp in job_gpus(j)]
-            head = job_name(j, nm, name_w).rstrip()
-            indent, gap = "    ", 3
-            if not cells:
-                L.append(indent + head)
-                return
-            # every gpu is treated alike, whatever node it sits on: one grid of
-            # fixed columns (never justified, so the rows stay aligned), with
-            # the name taking as few leading columns as it needs.
-            cw = max(vlen(c) for c in cells)
-            step = cw + gap
-            k = max(1, (width - len(indent) + gap) // step)
-            if k == 1:                       # no room beside the name at all
-                L.append("  " + head)
-                lead = 0
-            else:
-                lead = max(1, min(k - 1, -(-(vlen(head) + 2 - len(indent)) // step)))
-            first = lead > 0
-            while cells:
-                start = lead if first else 0
-                row, cells = cells[:k - start], cells[k - start:]
-                line = ("  " + pad(head, start * step + len(indent) - 2) if first
-                        else indent)
-                line += (" " * gap).join(pad(c, cw) for c in row)
-                L.append(line.rstrip())
-                first = False
+            grid_lines(L, job_name(j, nm, name_w).rstrip(),
+                       [gpu_block(short_node(n), gp) for n, gp in job_gpus(j)],
+                       width)
 
-        def pend_line(L, p, want):
+        def pend_cell(p, want):
             # same ink as running jobs; the qos is not repeated here
             codes = (1,) + qos_codes(p["qos"]) + ((ITALIC,) if p.get("excl") else ())
-            # why it is still queued, in the quietest ink there is
-            why = p.get("reason") or ""
-            why = "" if why.lower() in ("none", "null") else (
-                "  " + paint(why, DIM, BLACK))
-            L.append(("  %s %s  %s%s" % (
+            return "%s %s  %s" % (
                 pad(paint(shorten(p["name"], name_w), *codes), name_w),
-                pad(" ".join(want), want_w), pad(fmt_eta(p["eta"], now), eta_w),
-                why)).rstrip())
+                pad(" ".join(want), want_w), pad(fmt_eta(p["eta"], now), eta_w))
 
         # every running job appears under "my cpus" with its cpu usage; the ones
         # holding gpus appear again under "my gpus", there with gpu numbers only
@@ -838,6 +839,9 @@ def render(nodes, running, my, pending, cpus, width):
         sec_pending.append(paint("my pending", 1) + " " + paint("(", GRAY)
                            + qos_split([(p["qos"], 1) for p in pend])
                            + paint(")", GRAY))
+        # jobs waiting for the same thing belong together: the reason is the
+        # label, its jobs tile beside it exactly as a job's gpus do
+        groups = {}
         for p in pend:
             want = []
             if p["gpu"]:
@@ -845,7 +849,14 @@ def render(nodes, running, my, pending, cpus, width):
             want.append(unit("%d" % p["cpu"], "c"))
             if p["mem"]:
                 want.append(unit("%.0f" % hum_gib(p["mem"]), "G"))
-            pend_line(sec_pending, p, want)
+            why = p.get("reason") or ""
+            why = "" if why.lower() in ("none", "null") else why
+            groups.setdefault(why, []).append(pend_cell(p, want))
+        why_w = max([len(w) for w in groups] or [0])
+        for why, cells in groups.items():
+            # the quietest ink there is: the label is context, not news
+            grid_lines(sec_pending, paint(pad(why, why_w), DIM, BLACK), cells,
+                       width)
         # the header stays even when the queue is empty, so its absence is
         # never mistaken for the section having scrolled off
         if not pend:
@@ -881,14 +892,14 @@ def fmt_eta(dt, now):
         return paint("—", GRAY)
     m = int((dt - now).total_seconds() // 60)
     if m < 0:
-        return paint("now", GRAY)
+        return paint("now", BLACK)
     if m < 60:
-        return paint("%dm" % m, GRAY)
+        return paint("%dm" % m, BLACK)
     h, m = divmod(m, 60)
     if h < 24:
-        return paint("%dh%02dm" % (h, m), GRAY)
+        return paint("%dh%02dm" % (h, m), BLACK)
     d, h = divmod(h, 24)
-    return paint("%dd%02dh%02dm" % (d, h, m), GRAY)
+    return paint("%dd%02dh%02dm" % (d, h, m), BLACK)
 
 
 def build(no_live):
