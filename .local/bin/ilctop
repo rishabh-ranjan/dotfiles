@@ -86,7 +86,7 @@ GRAY = 90
 ITALIC = 3                       # marks exclusive (whole-node) allocations
 DIM = 2                          # faintest ink, for incidental detail
 NAME_MAX = 16                # floor for the (adaptive) job-name column
-COL_GAP_MIN = 4              # spaces the name column must leave between cells
+COL_GAP_MIN = 5              # spaces the name column must leave between cells
 # Only the dark half of the palette (30-37) inks the glyphs: the bright
 # variants wash out, which is what makes single characters hard to read.
 QOS_FG = {
@@ -516,18 +516,30 @@ def fit_cell_width(cells, width, indent=0, gap=3, sep=COL_GAP_MIN):
     return avail if ncols == 1 else (avail - sep * (ncols - 1)) // ncols
 
 
-def grid_lines(L, head, cells, width, indent="    ", gap=3):
+def grid_lines(L, head, cells, width, indent="    ", gap=3, lead_w=None):
     """A label on the left, its cells tiled in a fixed grid to the right.
 
     Columns are never justified, so the rows stay aligned however few cells the
     last one holds; the label takes as few leading columns as it needs, and the
     grid wraps underneath it.
+
+    `lead_w` overrides that with a fixed left column, so the grid can be lined
+    up with a neighbouring section that puts the same label there.
     """
     if not cells:
         L.append(indent + head)
         return
     cw = max(vlen(c) for c in cells)
     step = cw + gap
+    if lead_w is not None and lead_w + cw <= width:
+        k = max(1, (width - lead_w + gap) // step)
+        first = True
+        while cells:
+            row, cells = cells[:k], cells[k:]
+            line = (pad(head, lead_w) if first else " " * lead_w)
+            L.append((line + (" " * gap).join(pad(c, cw) for c in row)).rstrip())
+            first = False
+        return
     k = max(1, (width - len(indent) + gap) // step)
     if k == 1:                       # no room beside the label at all
         L.append("  " + head)
@@ -807,9 +819,11 @@ def render(nodes, running, my, pending, cpus, width):
             return live.get("gpus") or [(j["node"], None)] * j["gpu"]
 
         def gpu_lines(L, j, nm):
-            grid_lines(L, job_name(j, nm, nw_gpu).rstrip(),
+            # the label sits in the same column the packed single-gpu cells
+            # give it, so both kinds of row start their numbers together
+            grid_lines(L, "  " + job_name(j, nm, nw_gpu),
                        [gpu_block(short_node(n), gp) for n, gp in job_gpus(j)],
-                       width)
+                       width, gap=COL_GAP_MIN, lead_w=2 + nw_gpu + 1)
 
         def pend_cell(p, want):
             # same ink as running jobs; the qos is not repeated here
