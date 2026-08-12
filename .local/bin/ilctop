@@ -84,6 +84,7 @@ RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK = 31, 32, 33, 34, 35, 36, 30
 # units, allocations and labels
 GRAY = 90
 ITALIC = 3                       # marks exclusive (whole-node) allocations
+DIM = 2                          # faintest ink, for incidental detail
 NAME_MAX = 16                # job names are truncated to this width
 # Only the dark half of the palette (30-37) inks the glyphs: the bright
 # variants wash out, which is what makes single characters hard to read.
@@ -338,11 +339,11 @@ def get_pending():
     # Name last: it may contain our '|' delimiter (see get_my_jobs).
     _, out = run(["squeue", "-h", "-u", ME, "-t", "PD", "-O",
                   "UserName:|,QOS:|,tres-per-node:|,StartTime:|,NumCPUs:|,"
-                  "MinMemory:|,NumNodes:|,JobID:|,Name:|"])
+                  "MinMemory:|,NumNodes:|,JobID:|,Reason:|,Name:|"])
     pend = []
     for line in out.splitlines():
         f = line.split("|")
-        if len(f) < 9:
+        if len(f) < 10:
             continue
         user, qos, b, st = f[0].strip(), f[1].strip(), f[2].strip(), f[3].strip()
         rest = b[len("gres/gpu:"):] if b.startswith("gres/gpu:") else ""
@@ -361,7 +362,8 @@ def get_pending():
                          mem=detail.get("mem"),
                          gpu=detail.get("gpu") or cnt,
                          nn=int(f[6].strip() or 1),
-                         name="|".join(f[8:]).strip().rstrip("|")))
+                         reason=f[8].strip().strip("()"),
+                         name="|".join(f[9:]).strip().rstrip("|")))
     return pend
 
 
@@ -791,9 +793,14 @@ def render(nodes, running, my, pending, cpus, width):
         def pend_line(L, p, want):
             # same ink as running jobs; the qos is not repeated here
             codes = (1,) + qos_codes(p["qos"]) + ((ITALIC,) if p.get("excl") else ())
-            L.append(("  %s %s  %s" % (
+            # why it is still queued, in the quietest ink there is
+            why = p.get("reason") or ""
+            why = "" if why.lower() in ("none", "null") else (
+                "  " + paint(why, DIM, BLACK))
+            L.append(("  %s %s  %s%s" % (
                 pad(paint(shorten(p["name"], name_w), *codes), name_w),
-                pad(" ".join(want), want_w), fmt_eta(p["eta"], now))).rstrip())
+                pad(" ".join(want), want_w), fmt_eta(p["eta"], now),
+                why)).rstrip())
 
         # every running job appears under "my cpus" with its cpu usage; the ones
         # holding gpus appear again under "my gpus", there with gpu numbers only
