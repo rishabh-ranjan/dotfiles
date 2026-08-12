@@ -85,7 +85,8 @@ RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BLACK = 31, 32, 33, 34, 35, 36, 30
 GRAY = 90
 ITALIC = 3                       # marks exclusive (whole-node) allocations
 DIM = 2                          # faintest ink, for incidental detail
-NAME_MAX = 16                # job names are truncated to this width
+NAME_MAX = 16                # floor for the (adaptive) job-name column
+COL_GAP_MIN = 4              # spaces the name column must leave between cells
 # Only the dark half of the palette (30-37) inks the glyphs: the bright
 # variants wash out, which is what makes single characters hard to read.
 QOS_FG = {
@@ -502,6 +503,19 @@ def pack_cells(L, cells, width, gap=3, indent=""):
         L.append(line.rstrip())
 
 
+def fit_cell_width(cells, width, indent=0, gap=3, sep=COL_GAP_MIN):
+    """Widest a cell may grow to without disturbing the column layout.
+
+    The number of outer columns is taken from `cells` as they are now; the
+    answer is how wide each of those columns may become while still leaving
+    `sep` blanks between them (or filling the line, with a single column).
+    """
+    avail = max(1, width - indent)
+    cw = max(vlen(c) for c in cells)
+    ncols = min(max(1, (avail + gap) // (cw + gap)), len(cells))
+    return avail if ncols == 1 else (avail - sep * (ncols - 1)) // ncols
+
+
 def grid_lines(L, head, cells, width, indent="    ", gap=3):
     """A label on the left, its cells tiled in a fixed grid to the right.
 
@@ -688,7 +702,9 @@ def render(nodes, running, my, pending, cpus, width):
         jobs = sorted(my, key=lambda j: (j["start"] or now, j["name"]))
         labels, nodelbl = [], []
         for j in jobs:
-            labels.append(shorten(j["name"].rstrip("|"), NAME_MAX))
+            # kept whole here: the width they are shortened to is decided
+            # once the rest of the cell is known (see "adaptive name column")
+            labels.append(j["name"].rstrip("|"))
             nodelbl.append(",".join(short_node(n) for n in (j["nodes"] or [])))
         name_w = max([len(x) for x in labels] or [1])
         node_w = max([len(x) for x in nodelbl] or [1])
@@ -696,8 +712,8 @@ def render(nodes, running, my, pending, cpus, width):
         gnode_w = max([len(short_node(n)) for j in jobs for n in (j["nodes"] or [])]
                       or [1])
         triples = list(zip(jobs, labels, nodelbl))
-        name_w = max(name_w, max([len(shorten(p["name"], NAME_MAX))
-                                  for p in pending] or [0]))
+        name_w = want_name = max(name_w, max([len(p["name"])
+                                              for p in pending] or [0]))
         run_w = max([vlen(fmt_dur((now - j["start"]).total_seconds()))
                      for j in jobs if j["start"]] or [1])
         want_w = max([len("%d×%s %dc %.0fG" % (p["gpu"], disp_type(p["type"]),
@@ -771,9 +787,6 @@ def render(nodes, running, my, pending, cpus, width):
                                        gu_w, right=True),
                                    mem, pad(unit(paint("%.0f" % gp["pw"], BLACK), "W"), gp_w, right=True))
 
-        # trim the name column until the job line fits the terminal
-        name_w = max(6, min(name_w, width - (node_w + 4 + 21)))
-
         def job_name(j, nm, w):
             # bold and inked with the job's qos, italic when it holds nodes
             # exclusively -- the same italic marker the map uses
@@ -805,6 +818,40 @@ def render(nodes, running, my, pending, cpus, width):
                 pad(paint(shorten(p["name"], name_w), *codes), name_w),
                 pad(" ".join(want), want_w), pad(fmt_eta(p["eta"], now), eta_w))
 
+        gpu_triples = [x for x in triples if x[0]["gpu"] > 0]
+
+        def single_cell(j, nm):
+            gps = job_gpus(j)
+            n, gp = gps[0] if gps else (j["node"], None)
+            return job_name(j, nm, name_w) + " " + gpu_block(short_node(n), gp)
+
+        # ---- adaptive name column ---------------------------------------
+        # Names are worth as much room as the layout can spare: measure each
+        # section at the floor width, then give the column all the slack that
+        # is left once the outer columns keep COL_GAP_MIN blanks between them.
+        # NAME_MAX is only a floor -- a cramped terminal never trims below it.
+        name_w = NAME_MAX
+
+        def cap_name(cells, indent, gap=3):
+            # the cell is the name plus a fixed remainder: whatever room the
+            # column layout grants beyond that remainder is the name's
+            rest = max(vlen(c) for c in cells) - name_w
+            return fit_cell_width(cells, width, indent, gap) - rest
+
+        caps = []
+        if triples:
+            caps.append(cap_name([cpu_cell(j, nm, nl)
+                                  for j, nm, nl in triples], 2))
+        singles_probe = [single_cell(j, nm) for j, nm, _nl in gpu_triples
+                         if len(job_gpus(j)) <= 1]
+        if singles_probe:
+            caps.append(cap_name(singles_probe, 2))
+        if pending:
+            # grid_lines never justifies, so its gap has to be the real one
+            caps.append(cap_name([pend_cell(p, [""]) for p in pending], 4,
+                                 gap=COL_GAP_MIN))
+        name_w = min(want_name, max(NAME_MAX, min(caps)) if caps else NAME_MAX)
+
         # every running job appears under "my cpus" with its cpu usage; the ones
         # holding gpus appear again under "my gpus", there with gpu numbers only
         if triples:
@@ -815,7 +862,6 @@ def render(nodes, running, my, pending, cpus, width):
             pack_cells(sec_cpus_mine, [cpu_cell(j, nm, nl) for j, nm, nl in triples],
                        width, indent="  ")
 
-        gpu_triples = [x for x in triples if x[0]["gpu"] > 0]
         if gpu_triples:
             sec_gpus_mine.append(
                 paint("my gpus", 1) + " " + paint("(", GRAY)
@@ -825,11 +871,8 @@ def render(nodes, running, my, pending, cpus, width):
             # line each, so they are packed into columns together instead
             singles = []
             for j, nm, _nl in gpu_triples:
-                gps = job_gpus(j)
-                if len(gps) <= 1:
-                    n, gp = gps[0] if gps else (j["node"], None)
-                    singles.append(job_name(j, nm, name_w) + " "
-                                   + gpu_block(short_node(n), gp))
+                if len(job_gpus(j)) <= 1:
+                    singles.append(single_cell(j, nm))
                 else:
                     gpu_lines(sec_gpus_mine, j, nm)
             pack_cells(sec_gpus_mine, singles, width, indent="  ")
@@ -856,7 +899,7 @@ def render(nodes, running, my, pending, cpus, width):
         for why, cells in groups.items():
             # the quietest ink there is: the label is context, not news
             grid_lines(sec_pending, paint(pad(why, why_w), DIM, BLACK), cells,
-                       width)
+                       width, gap=COL_GAP_MIN)
         # the header stays even when the queue is empty, so its absence is
         # never mistaken for the section having scrolled off
         if not pend:
