@@ -674,6 +674,8 @@ def render(nodes, running, my, pending, cpus, width):
         want_w = max([len("%d×%s %dc %.0fG" % (p["gpu"], disp_type(p["type"]),
                                                  p["cpu"], hum_gib(p["mem"] or 0)))
                       for p in pending] or [0])
+        # the reason sits in a column of its own, so the etas are padded
+        eta_w = max([vlen(fmt_eta(p["eta"], now)) for p in pending] or [0])
 
         def num(s, hot=False):
             """Numerators are inked like the free counts; red when nearly full."""
@@ -799,7 +801,7 @@ def render(nodes, running, my, pending, cpus, width):
                 "  " + paint(why, DIM, BLACK))
             L.append(("  %s %s  %s%s" % (
                 pad(paint(shorten(p["name"], name_w), *codes), name_w),
-                pad(" ".join(want), want_w), fmt_eta(p["eta"], now),
+                pad(" ".join(want), want_w), pad(fmt_eta(p["eta"], now), eta_w),
                 why)).rstrip())
 
         # every running job appears under "my cpus" with its cpu usage; the ones
