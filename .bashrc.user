@@ -1,3 +1,6 @@
+# Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
+export KRB5_CONFIG=/afs/cs.stanford.edu/u/ranjanr/.krb5.conf
+
 # vim: set ft=bash
 #
 # Sole purpose of /sailhome/ranjanr: move an interactive login onto node-local
@@ -9,20 +12,23 @@
 # and for batch jobs alike (a slurm script with `#!/bin/bash -l` is a login
 # shell, so it lands here too). setup-node.sh is a few stat calls and no
 # network once the node is set up, so running it every time is free.
-LFS_HOME="/lfs/local/0/ranjanr"
-if [[ -f $LFS_HOME/setup-node.sh ]]
+if [[ -d /lfs ]]
 then
-	bash "$LFS_HOME/setup-node.sh" || echo "WARNING: setup-node.sh failed" >&2
-else
-	echo "setting up $LFS_HOME"
-	curl -fsSL https://raw.githubusercontent.com/rishabh-ranjan/dotfiles/main/setup-node.sh | bash
+	LFS_HOME="/lfs/local/0/ranjanr"
+	if [[ -f $LFS_HOME/setup-node.sh ]]
+	then
+		bash "$LFS_HOME/setup-node.sh" || echo "WARNING: setup-node.sh failed" >&2
+	else
+		echo "setting up $LFS_HOME"
+		curl -fsSL https://raw.githubusercontent.com/rishabh-ranjan/dotfiles/main/setup-node.sh | bash
+	fi
+	if [[ -d $LFS_HOME ]]
+	then
+		export HOME="$LFS_HOME"
+	fi
+	echo HOME="$HOME"
+	cd
 fi
-if [[ -d $LFS_HOME ]]
-then
-	export HOME="$LFS_HOME"
-fi
-echo HOME="$HOME"
-cd
 
 # if not interactive, exit
 [[ $- != *i* ]] && return

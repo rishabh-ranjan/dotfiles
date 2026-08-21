@@ -35,3 +35,6 @@ if test -d $dfs_home/.secrets
 end
 
 fish_add_path --path "$HOME/.local/bin"
+
+# Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
+set -gx KRB5_CONFIG /afs/cs.stanford.edu/u/ranjanr/.krb5.conf

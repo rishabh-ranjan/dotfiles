@@ -16,7 +16,7 @@
     "defaultMode": "dontAsk",
     "additionalDirectories": []
   },
-  "model": "opus",
+  "model": "fable",
   "fallbackModel": [
     "default"
   ],
@@ -42,7 +42,7 @@
   "defaultShell": "bash",
   "respondToBashCommands": true,
   "enabledPlugins": {},
-  "outputStyle": "Proactive",
+  "outputStyle": "Concise",
   "viewMode": "focus",
   "language": "english",
   "skipWebFetchPreflight": false,
