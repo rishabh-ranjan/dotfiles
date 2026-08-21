@@ -87,6 +87,13 @@ fi
 
 # ---- 4. node-local dirs everything else assumes ----
 mkdir -p "$HOME/.cache" "/tmp/$USER"
+# ~/scratch is the shared filesystem, the same path on every node, so a job
+# submitted with ~/scratch paths reads and writes the same files wherever it
+# lands. A real directory there is a node that wrote to local disk by mistake.
+if [[ ! -L $HOME/scratch ]]; then
+    [[ -e $HOME/scratch ]] && die "$HOME/scratch is not a symlink on $(hostname -s)"
+    ln -s "/dfs/user/$USER" "$HOME/scratch"
+fi
 
 # ---- 5. it worked, or nobody should trust this node ----
 for tool in fish git nvim tmux rg ag python; do
