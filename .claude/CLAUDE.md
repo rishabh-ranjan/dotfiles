@@ -14,9 +14,9 @@ In a worktree, merge and push to the branch it was branched from.
 # Compute resources
 
 Run lightweight commands directly.
-For anything else, use the ILC slurm cluster.
-If slurm commands don't work, try `ssh ilc`.
-Do not compute on the login node, use `srun/sbatch`.
+For anything else, submit a slurm job through the `roach` skill
+(`~/.claude/skills/roach/`): it knows the clusters, the budget,
+and how to watch a job.
 `/dfs/user/ranjanr` is shared across nodes,
 but it is slow.
 Use node-local storage (`/lfs` or `/tmp`)
