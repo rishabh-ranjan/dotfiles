@@ -18,4 +18,7 @@ do
   sleep 2
 done
 
-exec srun --jobid="$jid" --overlap --pty tmux attach -t dev
+# Attach via ssh, not srun: each srun attach creates a Slurm job step,
+# and the job dies at MaxStepCount (40000). ssh creates no steps.
+node=$(squeue -h -j "$jid" -o %N)
+exec ssh -t "$node" tmux attach -t dev
