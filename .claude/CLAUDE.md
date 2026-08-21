@@ -1,31 +1,22 @@
+# Compute resources
+
+Run lightweight commands directly.
+For anything else, submit a slurm job using the `roach` skill.
+
+
 # Files and dependencies
 
-Use `/tmp` for anything that need not be pushed to github.
-Do not pollute the filesystem with any logs, scripts, outputs, etc.
 Use pixi environments for dependencies.
+
+Use `~/scratch/<git_repo_name>/<expt_name>`
+for experiment data and outputs.
+Do NOT create any files or directories in `~/scratch`
+or `~/` unless explicitly asked,
+including as output files for your scripts.
+Use `/tmp` for anything that need not be pushed to github.
 
 
 # Github
 
 Commit and push often, without waiting for my permission.
 In a worktree, merge and push to the branch it was branched from.
-
-
-# Compute resources
-
-Run lightweight commands directly.
-For anything else, submit a slurm job through the `roach` skill
-(`~/.claude/skills/roach/`): it knows the clusters, the budget,
-and how to watch a job.
-`/dfs/user/ranjanr` is shared across nodes,
-but it is slow.
-Use node-local storage (`/lfs` or `/tmp`)
-for code, caches, environments, and temporary files.
-Clone fresh github repos to run the code in `/tmp/ranjanr/clones`
-and make sure to switch to the relevant branch/commit,
-caches will automatically use `/lfs/local/0/ranjanr/.cache`,
-pixi will automatically create environments in `/lfs/local/0/ranjanr/.pixi`,
-keep temporary files in `/tmp/ranjanr/<project_name>`.
-Only use `/dfs/user/ranjanr/share/<project_name>` for data that needs to be shared.
-Do NOT create any files or directories in `/dfs/user/ranjanr`
-or `/lfs/local/0/ranjanr` directly.
