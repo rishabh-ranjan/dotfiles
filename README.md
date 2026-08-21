@@ -26,8 +26,10 @@ shared rather than node-local; nothing here creates it).
 Interactive extras, once per node:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-fisher install IlanCosman/tide@v6
-tide configure --auto --style=Lean --prompt_colors='True color' --show_time='12-hour format' --lean_prompt_height='Two lines' --prompt_connection=Dotted --prompt_connection_andor_frame_color=Lightest --prompt_spacing=Compact --icons='Many icons' --transient=No
 curl -fsSL https://claude.ai/install.sh | bash
 ```
+
+The fish prompt needs nothing manual: `.config/fish/conf.d/tide_setup.fish`
+bootstraps fisher, installs the plugins in `.config/fish/fish_plugins`, and
+applies the tide configuration on first interactive shell. To change the
+prompt, edit the `tide configure` flags there and bump `TIDE_CONFIG_VERSION`.
