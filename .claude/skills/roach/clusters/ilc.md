@@ -1,6 +1,7 @@
 # ILC
 
-`ClusterName=ilc`. Submit host: `ssh ilc` if slurm commands are not on PATH.
+`ClusterName=ilc`. Submit from an ILC node (where `~` is `/lfs/local/0/$USER`);
+the `ilc` login host has no `~/scratch` and is not a submit host.
 Code: `roach.slurm.clusters.ilc` (`ILC`, `AMPERE`, `AMPERE_LO`, `BLACKWELL`).
 Monitor: [`scripts/ilc-watch.sh`](../scripts/ilc-watch.sh).
 

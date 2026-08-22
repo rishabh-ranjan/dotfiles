@@ -14,6 +14,10 @@ pending job. Only the first two mean the queue is working.
   the sweep out, deliberately.
 - `PartitionTimeLimit`, `QOSMaxWallDurationPerJob` — the job asks for longer
   than the qos allows and will never run. Fix the plan.
+- `AssocGrpGRESMinutes` (Marlowe) — the account's GPU-hour pool is spent. It
+  will never run there; tell the human.
+- `BeginTime` — requeued and waiting out slurm's hold before it restarts.
+  Fine once; a job that was already done should be cancelled instead.
 - `launch failed requeued held`, `JobHeldUser`, `JobHeldAdmin` — dead. Cancel,
   fix, resubmit.
 

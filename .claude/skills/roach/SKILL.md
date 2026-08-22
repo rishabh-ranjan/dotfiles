@@ -1,6 +1,6 @@
 ---
 name: roach
-description: Slurm jobs through the roach package (github.com/rishabh-ranjan/roach) — submitting, watching, rebalancing and recovering runs on the supported clusters (currently ILC). Use whenever sbatch, squeue, srun, a sweep, a pending or preempted job, a cluster budget, or roach itself comes up.
+description: Slurm jobs through the roach package (github.com/rishabh-ranjan/roach) — submitting, watching, rebalancing and recovering runs on the supported clusters (ILC, and Marlowe on the human's instruction). Use whenever sbatch, squeue, srun, a sweep, a pending or preempted job, a cluster budget, or roach itself comes up.
 ---
 
 # roach on slurm
@@ -13,23 +13,26 @@ skill is the workflow around it and what each cluster is like.
 
 ## 1. Which cluster
 
-```
-scontrol show config | grep ClusterName
-```
+**The cluster is the human's call alone.** A submission goes to ILC unless
+the instruction names Marlowe. Marlowe spends a metered allocation shared
+with the group and is never chosen on your own initiative, never as a
+fallback when ILC is full, and never with more than the human said.
 
-| ClusterName | read | code |
-| --- | --- | --- |
-| `ilc` | [clusters/ilc.md](clusters/ilc.md) | `roach.slurm.clusters.ilc` |
+| cluster | read | code | driven from |
+| --- | --- | --- | --- |
+| ILC | [clusters/ilc.md](clusters/ilc.md) | `roach.slurm.clusters.ilc` | an ILC node (this session's host) |
+| Marlowe | [clusters/marlowe.md](clusters/marlowe.md) | `roach.slurm.clusters.marlowe` | here, over `ssh marlowe` |
 
 Every cluster exists in exactly those two places, under one name: the skill
 file holds the budget, the topology and the tactics; the roach module holds the
 node environment and the `Resources` presets. Adding a cluster means adding
 both. If the cluster is neither here nor there, stop and say so.
 
-If slurm commands are not on PATH, you are on a login host that is not a
-submit host: `ssh <cluster>` (the cluster's page says which). Never compute on
-a login node; everything that is not a lightweight command goes through
-`sbatch`.
+Sessions run on an ILC node, where `~` is the node-local home and `~/scratch`
+the shared store; every path a submit script passes is written in those
+terms and means the same on every cluster. The `ilc` login host is not a
+submit host (its `~` is AFS and has no `scratch`). Never compute on a login
+node; everything that is not a lightweight command goes through `sbatch`.
 
 ## 2. Submit
 
@@ -38,9 +41,13 @@ from roach.slurm import Resources, submit
 from roach.slurm.clusters.ilc import ILC, AMPERE   # the cluster's module
 
 submit("pkg.module:function", args={...}, resources=AMPERE, cluster=ILC,
-       name=..., job_env=..., repo_root=..., log_root=..., clone_root=...,
-       secrets_dir=...)
+       name=..., job_env=..., repo_root=...,
+       log_root="~/scratch/<repo>/<expt>/slurm-logs",
+       clone_root="~/roach_clones", secrets_dir="~/scratch/.secrets")
 ```
+
+`~` in those three is the *cluster's* home: the same strings submit to
+Marlowe with `cluster=MARLOWE, resources=H100`.
 
 - **Submit it, do not `srun` it**, a two-minute probe included. The repo lives
   on the submitting host's local disk, which the compute node does not have;
