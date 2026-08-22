@@ -30,11 +30,11 @@ then
 	cd
 fi
 
-# PATH for every shell, interactive or not: `ssh <host> cmd` runs this far and
-# needs the same tools a login does (pixi, ~/.local/bin, and on Marlowe slurm,
-# which the system PATH lacks). fish inherits it, and its own fish_add_path
-# calls are then no-ops.
-export PATH="$HOME/.local/bin:$HOME/.pixi/bin:$PATH"
+# PATH and pixi for every shell, interactive or not: `ssh <host> cmd` runs this
+# far and needs the same tools a login does (pixi, ~/.local/bin, and on Marlowe
+# slurm, which the system PATH lacks). fish inherits all of it.
+export PIXI_HOME="$HOME/.pixi"
+export PATH="$HOME/.local/bin:$PIXI_HOME/bin:$PATH"
 if [[ -d /marlowe ]]
 then
 	export PATH="/cm/shared/apps/slurm/current/bin:$PATH"
@@ -52,7 +52,6 @@ then
 	bash "$HOME/setup-node.sh" || echo "WARNING: setup-node.sh failed" >&2
 fi
 
-export PIXI_HOME="$HOME/.pixi"
 FISH_SHELL="$PIXI_HOME/bin/fish"
 if [[ -x $FISH_SHELL ]]
 then
