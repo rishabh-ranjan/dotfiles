@@ -10,6 +10,9 @@ poll=${1:-120}
 M='ssh -o BatchMode=yes marlowe export PATH=/cm/shared/apps/slurm/current/bin:$PATH SLURM_CONF=/cm/shared/apps/slurm/var/etc/slurm/slurm.conf;'
 prev=""; last_beat=0; declare -A elapsed restarts
 
+# slurm's %M is [[d-]h:]m:s; compare as seconds, not as strings
+secs() { local s=${1##*-} d=0; [[ $1 == *-* ]] && d=${1%%-*}; local IFS=:; set -- $s; local t=0; for p in "$@"; do t=$((t*60 + 10#$p)); done; echo $((d*86400 + t)); }
+
 round() {
     local q pend state="" left
     q=$($M squeue -u '$USER' -h -o '"%i %j %P %T %M %R"') || { echo "$(date +%T) ssh failed: is the ControlMaster up? (ssh -O check marlowe)"; return; }
@@ -23,7 +26,7 @@ round() {
             *AssocGrp*|*QOSMax*|*PartitionTimeLimit*|*Held*|*requeued*|*DependencyNever*)
                 state+="STUCK: $id $name $part $reason\n" ;;
         esac
-        if [[ $st == RUNNING && -n ${elapsed[$id]:-} ]] && [[ "$el" < "${elapsed[$id]}" ]]; then
+        if [[ $st == RUNNING && -n ${elapsed[$id]:-} ]] && (( $(secs "$el") < $(secs "${elapsed[$id]}") )); then
             state+="RESTARTED: $id $name elapsed ${elapsed[$id]} -> $el\n"
         fi
         if [[ $st == PENDING && ${elapsed[$id]:-} == *:* && ${elapsed[$id]} != 0:00 ]]; then

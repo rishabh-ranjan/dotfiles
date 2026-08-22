@@ -11,6 +11,9 @@ set -uo pipefail
 poll=${1:-120}
 prev=""; last_beat=0; declare -A elapsed
 
+# slurm's %M is [[d-]h:]m:s; compare as seconds, not as strings
+secs() { local s=${1##*-} d=0; [[ $1 == *-* ]] && d=${1%%-*}; local IFS=:; set -- $s; local t=0; for p in "$@"; do t=$((t*60 + 10#$p)); done; echo $((d*86400 + t)); }
+
 round() {
     local q il int ilb pend bw bwfree state="" line
     q=$(squeue -u "$USER" -h -o "%i %j %q %T %b %R %M" | grep -v dev-node)
@@ -30,7 +33,7 @@ round() {
             *ReqNodeNotAvail*|*QOSMax*|*AssocMax*|*TimeLimit*|*WallDuration*|*Held*|*requeued*)
                 state+="STUCK: $id $name $qos $reason\n" ;;
         esac
-        if [[ $st == RUNNING && -n ${elapsed[$id]:-} ]] && [[ "$el" < "${elapsed[$id]}" ]]; then
+        if [[ $st == RUNNING && -n ${elapsed[$id]:-} ]] && (( $(secs "$el") < $(secs "${elapsed[$id]}") )); then
             state+="RESTARTED: $id $name elapsed ${elapsed[$id]} -> $el\n"
         fi
         elapsed[$id]=$el
