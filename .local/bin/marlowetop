@@ -25,8 +25,10 @@ Three vertically-compact sections:
   4. BUDGET     GPU-hours used/allotted for every metered account you can
                charge (sshare GrpTRESMins).
 
-Live numbers are read with a short `srun --overlap` into each of your jobs
-(nvidia-smi + cgroup-v1). The kernel only exposes your own GPUs to you, so
+Live numbers are read by a short ssh into each node of each of your jobs
+(pam_slurm_adopt puts it inside the job; `srun --overlap` is the fallback,
+and the route when you hold several jobs on one node), using nvidia-smi and
+the cgroup-v1 accounting. The kernel only exposes your own GPUs to you, so
 everyone else is shown from the SLURM allocation view.
 
 Colours are emitted as plain 16-colour SGR codes for maximum terminal
@@ -400,7 +402,7 @@ def collect_node(task):
     A multi-node job has one cgroup and one set of GPUs per node, so it needs
     one probe per node; the caller merges the per-node results.
     """
-    job, node = task
+    job, node, via_ssh = task
     jid = job["jobid"]
     if not node:
         return None
@@ -414,14 +416,23 @@ def collect_node(task):
         "echo @CG\n"
         'echo -n "T1 "; date +%%s%%N\n'
         'echo -n "U1 "; cat $C/cpuacct.usage 2>/dev/null\n'
-        "sleep 0.4\n"
+        "sleep 0.25\n"
         'echo -n "T2 "; date +%%s%%N\n'
         'echo -n "U2 "; cat $C/cpuacct.usage 2>/dev/null\n'
         'echo -n "AN "; grep "^total_rss " $M/memory.stat 2>/dev/null\n'
         'echo -n "MX "; cat $M/memory.limit_in_bytes 2>/dev/null\n'
     ) % (UID, jid)
-    _, out = run(["srun", "--jobid", jid, "--overlap", "-w", node,
-                  "--ntasks=1", "bash", "-c", snippet], timeout=30)
+    # ssh is half the latency of srun: pam_slurm_adopt drops the session into
+    # one of my jobs on the node, which is the right one when there is only
+    # one (the cgroup paths are by job id either way, only the nvidia-smi
+    # view depends on it); srun stays the fallback and the multi-job path
+    out = ""
+    if via_ssh:
+        _, out = run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
+                      "-o", "LogLevel=ERROR", node, snippet], timeout=15)
+    if "@CG" not in out:
+        _, out = run(["srun", "--jobid", jid, "--overlap", "-w", node,
+                      "--ntasks=1", "bash", "-c", snippet], timeout=30)
     if "@CG" not in out:
         return None
     head, tail = out.split("@CG", 1)
@@ -1010,11 +1021,15 @@ def build(no_live):
     cpus = get_cpus()
     budget = get_budget()
     if not no_live:
-        tasks = [(j, nd) for j in my for nd in (j["nodes"] or [])]
+        per_node = {}
+        for j in my:
+            for nd in (j["nodes"] or []):
+                per_node[nd] = per_node.get(nd, 0) + 1
+        tasks = [(j, nd, per_node[nd] == 1) for j in my for nd in (j["nodes"] or [])]
         with ThreadPoolExecutor(max_workers=16) as ex:
             res = list(ex.map(collect_node, tasks))
         per_job = {}
-        for (j, _nd), r in zip(tasks, res):
+        for (j, _nd, _s), r in zip(tasks, res):
             if r:
                 per_job.setdefault(id(j), []).append(r)
         for j in my:                      # merge the per-node probes into one view
