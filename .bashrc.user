@@ -28,6 +28,11 @@ then
 	fi
 	echo HOME="$HOME"
 	cd
+elif [[ -d /marlowe ]]
+then
+	# Marlowe: the home is already this checkout; setup-node.sh only keeps
+	# it to spec (pixi version, the symlinks into scratch).
+	bash "$HOME/setup-node.sh" || echo "WARNING: setup-node.sh failed" >&2
 fi
 
 # if not interactive, exit
