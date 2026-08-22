@@ -30,6 +30,17 @@ then
 	cd
 fi
 
+# PATH for every shell, interactive or not: `ssh <host> cmd` runs this far and
+# needs the same tools a login does (pixi, ~/.local/bin, and on Marlowe slurm,
+# which the system PATH lacks). fish inherits it, and its own fish_add_path
+# calls are then no-ops.
+export PATH="$HOME/.local/bin:$HOME/.pixi/bin:$PATH"
+if [[ -d /marlowe ]]
+then
+	export PATH="/cm/shared/apps/slurm/current/bin:$PATH"
+	export SLURM_CONF=/cm/shared/apps/slurm/var/etc/slurm/slurm.conf
+fi
+
 # if not interactive, exit -- before anything that prints: `ssh marlowe cmd`
 # is how jobs are submitted there, and its stdout is parsed.
 [[ $- != *i* ]] && return
