@@ -1,1 +1,5 @@
 run-post-link-scripts = "insecure"
+
+# Lustre and NFS take flock; do not move the repodata cache to TMPDIR (one warning per rank otherwise).
+[cache]
+netfs-redirect = "never"
