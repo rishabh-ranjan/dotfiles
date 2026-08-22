@@ -39,9 +39,11 @@ non-interactively only through the ControlMaster in `~/.ssh/config`. Check
 | `/local_scratch/$USER.$SLURM_JOB_ID` | per-job dir on the node's 28 T NVMe, deleted by the epilog | `TMPDIR`, set by the env; nothing that outlives the job |
 | `/tmp`, `/local` | the node's root disk, routinely full | never |
 
-`~/roach_clones` is on Lustre: a cold `import torch` from it is ~22 s on a
-node that has not seen the environment (5 s warm). That is the expected gap
-after `clone:` in a log, not a stall.
+`~/roach_clones` is on Lustre. Measured on the first roach job there: the
+first job at a commit spends ~2 min in `prepare:` (pixi install plus the rust
+build), a later one seconds; a cold `import torch` on a node that has not
+seen the environment is ~22 s (5 s warm), and `time_to_first_step` came 21 s
+after the ranks started. Those are the expected gaps in a log, not stalls.
 
 ## Partitions
 
