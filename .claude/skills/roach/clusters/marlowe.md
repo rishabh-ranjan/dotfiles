@@ -63,7 +63,7 @@ it if it is done.
 The allocation is one pool, no per-user caps, first come first served:
 
 ```
-$M sshare -A marlowe-m000137-pm06 -l -n -o Account,GrpTRESMins,GrpTRESRaw%80 | head -1   # gres/gpu= minutes: limit, used
+$M sshare -A marlowe-m000137-pm06 -l -n -o Account,GrpTRESMins,GrpTRESRaw%200 | head -1   # gres/gpu= minutes: limit, used
 ```
 
 `AssocGrpGRESMinutes` as a pending reason means the pool is spent.
