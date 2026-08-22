@@ -28,15 +28,18 @@ then
 	fi
 	echo HOME="$HOME"
 	cd
-elif [[ -d /marlowe ]]
+fi
+
+# if not interactive, exit -- before anything that prints: `ssh marlowe cmd`
+# is how jobs are submitted there, and its stdout is parsed.
+[[ $- != *i* ]] && return
+
+if [[ -d /marlowe ]]
 then
 	# Marlowe: the home is already this checkout; setup-node.sh only keeps
 	# it to spec (pixi version, the symlinks into scratch).
 	bash "$HOME/setup-node.sh" || echo "WARNING: setup-node.sh failed" >&2
 fi
-
-# if not interactive, exit
-[[ $- != *i* ]] && return
 
 export PIXI_HOME="$HOME/.pixi"
 FISH_SHELL="$PIXI_HOME/bin/fish"
