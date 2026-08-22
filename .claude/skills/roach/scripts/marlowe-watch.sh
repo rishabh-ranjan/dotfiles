@@ -7,7 +7,7 @@
 #   bash marlowe-watch.sh [poll-seconds]     # default 120; ends when the queue is empty
 set -uo pipefail
 poll=${1:-120}
-M='ssh -o BatchMode=yes marlowe export PATH=/cm/shared/apps/slurm/current/bin:$PATH SLURM_CONF=/cm/shared/apps/slurm/var/etc/slurm/slurm.conf;'
+M='ssh -o BatchMode=yes marlowe'
 prev=""; last_beat=0; declare -A elapsed restarts
 
 # slurm's %M is [[d-]h:]m:s; compare as seconds, not as strings

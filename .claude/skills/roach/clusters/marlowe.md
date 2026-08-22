@@ -15,17 +15,13 @@ sweep may take is the human's call every time.
 
 The session never runs on Marlowe. `MARLOWE.submit_host="marlowe"` makes
 `submit()` and `Job.state` go over ssh, and every command on this page is
-run the same way:
-
-```
-ssh marlowe 'export PATH=/cm/shared/apps/slurm/current/bin:$PATH SLURM_CONF=/cm/shared/apps/slurm/var/etc/slurm/slurm.conf; squeue -u $USER'
-```
-
-(`M='ssh marlowe export PATH=... SLURM_CONF=...;'` and then `$M squeue ...`
-is the shape the watch script uses.) The host is Duo-gated; ssh works
-non-interactively only through the ControlMaster in `~/.ssh/config`. Check
-`ssh -O check marlowe` first: if there is no master, ask the human to run
-`! ssh marlowe true` once and continue. Never retry a hanging ssh.
+run the same way -- `ssh marlowe squeue -u ranjanr`, `ssh marlowe marlowetop`
+(the dotfiles put slurm and `~/.local/bin` on PATH for non-interactive
+shells). `$M` below is `ssh -o BatchMode=yes marlowe`. The host is
+Duo-gated; ssh works non-interactively only through the ControlMaster in
+`~/.ssh/config`. Check `ssh -O check marlowe` first: if there is no master,
+ask the human to run `! ssh marlowe true` once and continue. Never retry a
+hanging ssh.
 
 ## Nodes and storage
 
