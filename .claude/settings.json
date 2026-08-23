@@ -4,7 +4,8 @@
   "cleanupPeriodDays": 30,
   "env": {
     "CLAUDE_CODE_SHELL": "/bin/bash",
-    "SHELL": "/bin/bash"
+    "SHELL": "/bin/bash",
+    "CLAUDE_AUTO_BACKGROUND_TASKS": "1"
   },
   "attribution": {},
   "includeCoAuthoredBy": true,
