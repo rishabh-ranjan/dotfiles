@@ -20,3 +20,8 @@ Use `/tmp` for anything that need not be pushed to github.
 
 Commit and push often, without waiting for my permission.
 In a worktree, merge and push to the branch it was branched from.
+
+
+# User input
+
+If blocked on user input, send a push notification.
