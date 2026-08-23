@@ -71,6 +71,18 @@ Marlowe with `cluster=MARLOWE, resources=H100`.
   already hold, apply the cluster's budget, and write today's answer into the
   file.
 
+### Iterating: hold the allocation
+
+When a run is being debugged -- it hung, it was cancelled, the next attempt
+is minutes away -- do not queue every attempt as a job: `hold(resources,
+cluster=..., name=..., log_root=...)` queues a job that takes the node and
+sleeps, and once it is running every `submit(..., inside=<its id>)` starts
+at once as a step of it. Same script, same logs (`<run_id>_<holder>.out`),
+no requeue (a step dies with the holder). The holder is charged whether or
+not a step runs in it: `scancel` it the moment an attempt trains correctly,
+and submit the real run as a job of its own. On a metered cluster the human
+decides to hold, as for any other placement.
+
 ## 3. Watch every job you submit
 
 **A submission is not done when `sbatch` returns — it is done when you have
