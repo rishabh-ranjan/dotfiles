@@ -8,8 +8,8 @@ if ! squeue -h -u "$USER" -n dev-node -t PENDING,RUNNING -o %i | grep -q .; then
   sbatch --account=infolab --partition=il-cpu --qos=il-cpu-long \
     --job-name=dev-node --nodelist=hyperturing1 \
     --nodes=1 --cpus-per-task=8 --mem=60G \
-    --time=31-00:00:00 --output=/dev/null \
-    --wrap='export HOME=/lfs/local/0/ranjanr; cd; export SHELL=/lfs/local/0/ranjanr/.pixi/bin/fish; tmux new-session -d -s dev; exec sleep infinity' >/dev/null
+    --time=31-00:00:00 --output=/lfs/local/0/ranjanr/dev-node.log \
+    --wrap='export HOME=/lfs/local/0/ranjanr; cd; export PATH=$HOME/.pixi/bin:$PATH; export SHELL=/lfs/local/0/ranjanr/.pixi/bin/fish; tmux new-session -d -s dev || exit 1; exec sleep infinity' >/dev/null
 fi
 
 until jid=$(squeue -h -u "$USER" -n dev-node -t RUNNING -o %i | head -1)
@@ -21,4 +21,8 @@ done
 # Attach via ssh, not srun: each srun attach creates a Slurm job step,
 # and the job dies at MaxStepCount (40000). ssh creates no steps.
 node=$(squeue -h -j "$jid" -o %N)
-exec ssh -t "$node" tmux attach -t dev
+# Use the pixi tmux (3.7) everywhere: the wrap starts it (PATH has ~/.pixi/bin),
+# and /usr/bin/tmux (3.4) cannot talk to that server ("server exited unexpectedly").
+tmux=/lfs/local/0/ranjanr/.pixi/bin/tmux
+ssh "$node" $tmux has-session -t dev 2>/dev/null || ssh "$node" "HOME=/lfs/local/0/ranjanr PATH=/lfs/local/0/ranjanr/.pixi/bin:\$PATH SHELL=/lfs/local/0/ranjanr/.pixi/bin/fish $tmux new-session -d -s dev -c /lfs/local/0/ranjanr"
+exec ssh -t "$node" $tmux attach -t dev
