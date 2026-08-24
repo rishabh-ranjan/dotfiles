@@ -25,3 +25,8 @@ In a worktree, merge and push to the branch it was branched from.
 # User input
 
 If blocked on user input, send a push notification.
+
+
+# Coding style
+
+No comments. No docstrings. Code says what it does; git says what changed.
