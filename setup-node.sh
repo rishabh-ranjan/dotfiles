@@ -43,7 +43,9 @@ PIXI_VERSION=0.71.3
 UPDATE=0
 [[ ${1:-} == --update ]] && UPDATE=1
 
-say() { echo "setup-node: $*"; }
+# Progress goes to stderr: this runs from .bashrc.user for every `ssh <node> cmd`,
+# whose stdout callers parse.
+say() { echo "setup-node: $*" >&2; }
 die() { echo "setup-node: $*" >&2; exit 1; }
 
 command -v git >/dev/null || die "no git on PATH"
@@ -128,4 +130,3 @@ for tool in fish git nvim tmux rg ag python; do
     [[ -x $PIXI_HOME/bin/$tool ]] || die "$tool still missing on $(hostname -s)"
 done
 
-say "ok: $(hostname -s) HOME=$HOME pixi=$(pixi --version)"
