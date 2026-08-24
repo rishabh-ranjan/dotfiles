@@ -26,7 +26,7 @@ then
 	then
 		export HOME="$LFS_HOME"
 	fi
-	echo HOME="$HOME"
+	[[ $- == *i* ]] && echo HOME="$HOME"
 	cd
 fi
 
