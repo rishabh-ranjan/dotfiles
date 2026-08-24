@@ -31,6 +31,3 @@ end
 
 # Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
 set -gx KRB5_CONFIG /afs/cs.stanford.edu/u/ranjanr/.krb5.conf
-
-# pixi (not inherited by batch/tmux/ssh-command envs)
-fish_add_path -g $HOME/.pixi/bin
