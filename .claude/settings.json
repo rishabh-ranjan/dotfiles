@@ -17,7 +17,7 @@
     "defaultMode": "dontAsk",
     "additionalDirectories": []
   },
-  "model": "fable",
+  "model": "opus",
   "fallbackModel": [
     "default"
   ],
