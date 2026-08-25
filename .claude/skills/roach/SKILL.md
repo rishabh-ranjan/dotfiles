@@ -83,6 +83,18 @@ not a step runs in it: `scancel` it the moment an attempt trains correctly,
 and submit the real run as a job of its own. On a metered cluster the human
 decides to hold, as for any other placement.
 
+Swapping or stopping a step cleanly: the ranks' step is the one with
+`Tasks=<gpus>` in `scontrol show step <holder>.<n>` (the script's step has
+one task per node). `scancel --signal=USR1 <holder>.<step>` does not reach
+the ranks reliably; what does is a step of your own on the same nodes,
+`srun --jobid=<holder> --overlap -N<nodes> -n<nodes> --ntasks-per-node=1
+bash -c 'pkill -USR1 -f roach.slurm.run'`, after which the log shows
+`caught_signal` and the run checkpoints and exits at its next step. Wait for
+the ranks' step to leave `squeue -s`, confirm every card reads 0 MiB, and
+only then submit the next attempt -- a submit before that stacks a second
+instance on the same cards. Do the same a few minutes before a holder's wall
+clock so the last checkpoint is fresh.
+
 ## 3. Watch every job you submit
 
 **A submission is not done when `sbatch` returns — it is done when you have

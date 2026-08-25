@@ -327,7 +327,7 @@ def cmd_search(token, query, top=25):
     params = {
         "$search": f'"{query}"',
         "$top": top,
-        "$select": "subject,from,receivedDateTime,bodyPreview",
+        "$select": "id,subject,from,receivedDateTime,bodyPreview",
         "$orderby": "receivedDateTime desc",
     }
     # $search and $orderby can't combine on all tenants; fall back if needed
@@ -346,7 +346,7 @@ def cmd_search(token, query, top=25):
         sender = m.get("from", {}).get("emailAddress", {}).get("address", "?")
         subj = m.get("subject", "(no subject)")
         preview = (m.get("bodyPreview") or "")[:120]
-        print(f"[{date}]  {sender}")
+        print(f"[{date}]  {sender}  <id:{m['id']}>")
         print(f"  {subj}")
         if preview:
             print(f"  {preview}")
