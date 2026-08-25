@@ -17,7 +17,7 @@
     "defaultMode": "dontAsk",
     "additionalDirectories": []
   },
-  "model": "opus",
+  "model": "fable",
   "fallbackModel": [
     "default"
   ],
@@ -42,7 +42,17 @@
   "disableSkillShellExecution": false,
   "defaultShell": "bash",
   "respondToBashCommands": true,
-  "enabledPlugins": {},
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    }
+  },
   "outputStyle": "Concise",
   "viewMode": "focus",
   "language": "english",
