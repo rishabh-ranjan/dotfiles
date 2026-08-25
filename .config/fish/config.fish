@@ -27,6 +27,10 @@ if test -d $secrets
 	set -x HF_TOKEN (cat $secrets/huggingface)
 	set -x HUGGING_FACE_HUB_TOKEN $HF_TOKEN
 	set -x WANDB_API_KEY (cat $secrets/wandb)
+	set -x PYPI_API_TOKEN (cat $secrets/pypi)
+	set -x UV_PUBLISH_TOKEN $PYPI_API_TOKEN
+	set -x TWINE_USERNAME __token__
+	set -x TWINE_PASSWORD $PYPI_API_TOKEN
 end
 
 # Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
