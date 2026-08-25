@@ -54,7 +54,7 @@ mkdir -p ~/Mail
 uv run "<skill-base-dir>/scripts/office365_sync.py" auth
 ```
 
-The token is cached at `~/Mail/.office365/token_cache.json` and auto-refreshed on subsequent runs. **No password is ever stored.**
+The token cache is stored at `$OFFICE365_TOKEN_CACHE` (default `~/scratch/.secrets/office365`, alongside the other API tokens) and auto-refreshed on subsequent runs. **No password is ever stored.**
 
 ### 3. (Optional) Set up notmuch indexing
 
@@ -131,12 +131,12 @@ Message IDs are Graph API IDs (long opaque strings). You typically get them from
 
 - **Sync script:** `scripts/office365_sync.py` (resolved against the skill base directory — do not copy out)
 - **Maildir:** `~/Mail/Stanford/` (created by the script)
-- **Token cache:** `~/Mail/.office365/token_cache.json`
+- **Token cache:** `$OFFICE365_TOKEN_CACHE` (default `~/scratch/.secrets/office365`)
 - **Sync state:** `~/Mail/.office365/sync_state.json`
 
 ## Security notes
 
-- **Token is stored on disk** (encrypted by MSAL's default cache, but still sensitive). Do not commit `~/Mail/.office365/` to git.
+- **Token is stored on disk** (encrypted by MSAL's default cache, but still sensitive). Do not commit the token cache to git.
 - **The Maildir is plaintext mail.** Do not sync it to a shared location.
 - **Never log or echo the access token.** The script avoids this, but be careful with `set -x` or verbose shells.
 - **Stanford Confidential and HIPAA data** may be in your inbox — review Stanford's policies before storing mail locally.

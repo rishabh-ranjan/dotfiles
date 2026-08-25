@@ -37,7 +37,7 @@ import requests
 
 MAIL_DIR = Path.home() / "Mail" / "Stanford"
 CONFIG_DIR = Path.home() / "Mail" / ".office365"
-TOKEN_CACHE = CONFIG_DIR / "token_cache.json"
+TOKEN_CACHE = Path(os.environ.get("OFFICE365_TOKEN_CACHE", Path.home() / "scratch" / ".secrets" / "office365"))
 STATE_FILE = CONFIG_DIR / "sync_state.json"
 
 # Microsoft Office public client — works with most O365 tenants.
@@ -70,7 +70,9 @@ def get_app():
 
 
 def save_cache(cache):
+    TOKEN_CACHE.parent.mkdir(parents=True, exist_ok=True)
     TOKEN_CACHE.write_text(cache.serialize())
+    TOKEN_CACHE.chmod(0o600)
 
 
 def get_token():

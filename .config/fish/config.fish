@@ -31,6 +31,7 @@ if test -d $secrets
 	set -x UV_PUBLISH_TOKEN $PYPI_API_TOKEN
 	set -x TWINE_USERNAME __token__
 	set -x TWINE_PASSWORD $PYPI_API_TOKEN
+	set -x OFFICE365_TOKEN_CACHE $secrets/office365
 end
 
 # Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
