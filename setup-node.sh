@@ -23,7 +23,9 @@
 # Two sites. ILC: the home is node-local NVMe (/lfs/local/0), ~/scratch is the
 # shared /dfs. Marlowe: the home is the shared /users, ~/scratch is the project
 # allocation on Lustre, and ~/.cache and ~/roach_clones are symlinks into it
-# (the home's quota is small; nothing node-local persists there).
+# (the home's quota is small; nothing node-local persists there). Anywhere
+# else the home stays where it is and ~/scratch has to be a symlink you made
+# yourself -- this script will not guess a shared store, it fails and says so.
 
 set -euo pipefail
 
@@ -34,10 +36,14 @@ if [[ -d /marlowe ]]; then
     SITE=marlowe
     NODE_HOME=${NODE_HOME:-/users/${USER:-$(id -un)}}
     SCRATCH=/scratch/m000137-pm06/${USER:-$(id -un)}
-else
+elif [[ -d /lfs/local/0 && -d /dfs/user ]]; then
     SITE=ilc
     NODE_HOME=${NODE_HOME:-/lfs/local/0/${USER:-$(id -un)}}
     SCRATCH=/dfs/user/${USER:-$(id -un)}
+else
+    SITE=other
+    NODE_HOME=${NODE_HOME:-$HOME}
+    SCRATCH=  # unknown here: ~/scratch must already be a symlink of yours
 fi
 PIXI_VERSION=0.71.3
 UPDATE=0
@@ -111,14 +117,24 @@ fi
 mkdir -p "$HOME/.cache" "/tmp/$USER"
 # ~/scratch is the shared filesystem, the same path on every node, so a job
 # submitted with ~/scratch paths reads and writes the same files wherever it
-# lands. A real directory there is a node that wrote to local disk by mistake.
+# lands. A real directory there is a node that wrote to local disk by mistake
+# -- slurm makes one when it opens a job's log under ~/scratch before this
+# script has run on the node -- and it is never deleted here: look at what it
+# holds, then replace it by hand.
 link() {  # <name> <target>: $HOME/<name> -> <target>, and nothing else may be there
     if [[ ! -L $HOME/$1 ]]; then
-        [[ -e $HOME/$1 ]] && die "$HOME/$1 is not a symlink on $(hostname -s)"
+        [[ -e $HOME/$1 ]] && die "$HOME/$1 is a real directory on $(hostname -s), not a symlink;" \
+            "inspect it, then: rm -rf $HOME/$1 && ln -s $2 $HOME/$1"
         ln -s "$2" "$HOME/$1"
     fi
 }
-link scratch "$SCRATCH"
+if [[ $SITE == other ]]; then
+    [[ -L $HOME/scratch && -d $HOME/scratch/ ]] ||
+        die "$(hostname -s) is neither ILC nor Marlowe, so ~/scratch is not created here;" \
+            "make it yourself: ln -s <your shared store> $HOME/scratch"
+else
+    link scratch "$SCRATCH"
+fi
 if [[ $SITE == marlowe ]]; then
     mkdir -p "$SCRATCH/.cache" "$SCRATCH/roach_clones"
     link .cache scratch/.cache
