@@ -24,6 +24,36 @@ ever run on that one node. Nothing pins the amperes. The scheduler treats a
 node with a full local disk as healthy, so a job placed there starts and then
 wedges: keep a known-bad node out with `Resources.exclude`.
 
+### CPU-only work: partition `il-cpu`
+
+Zero-gres jobs (LightGBM fits, featurizing, index builds) go to partition
+`il-cpu`, qos `il-cpu`, account `infolab`: no per-user cap, 31d wall clock,
+priority 100 with nothing else queued there (`il-cpu-long`, 90d, is capped at
+8 cpus / 60G per user and is what a dev-node job holds). Under `il` a
+zero-gres job is outside the GPU cap too, but it lands on the GPU nodes and
+the interactive one: fifteen 16-cpu LightGBM jobs held all 252 cpus of
+hyperturing1 for three hours (2026-08-27).
+
+| node | cpus | memory | 2026-08-27 |
+| --- | --- | --- | --- |
+| `rambo` | 288 | 8.5T | set up, used |
+| `furiosa` | 144 | 2T | set up, used |
+| `trinity` | 144 | 6T | never set up; local disk 94% full |
+| `madmax2`-`madmax4`, `madmax7` | 80 | 1T | never set up |
+| `madmax1`, `madmax6` | 64-80 | 1T | down |
+
+The GPU nodes (`hyperion1/3`, `hyperturing1/2`, `turing1-3`) are in the
+partition as well; pick the set with `Resources.exclude` listing the others
+(`nodelist` with several hosts and one node per job is a conflict). A first
+job on a node that was never set up bootstraps it through the node
+environment (dotfiles home, pixi, `~/scratch` link: ~8 min on furiosa before
+the clone, then the env build) and works, but its slurm-level stdout is lost
+until `~/scratch` exists, since slurm cannot open a log under a path that is
+not there yet -- probe such a node with `-o /dfs/user/$USER/...`, and never
+`mkdir -p` a log path under `/lfs/local/0/$USER/scratch` on it: a real
+directory there makes every later job on that node die in the environment
+check until it is removed by hand.
+
 ## Allocating a sweep
 
 **The three qos tiers are a budget to spend, not a preference order over
