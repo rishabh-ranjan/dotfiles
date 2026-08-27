@@ -368,6 +368,12 @@ def cmd_folders(token):
 # --- Read a message ----------------------------------------------------------
 
 
+def cmd_markread(token, message_id):
+    resp = requests.patch(f"{GRAPH}/me/messages/{message_id}", headers={**headers(token), "Content-Type": "application/json"}, json={"isRead": True})
+    resp.raise_for_status()
+    print("Marked read.")
+
+
 def cmd_read(token, message_id):
     """Fetch and print a single message by Graph ID or search for it."""
     params = {"$select": "subject,from,toRecipients,ccRecipients,receivedDateTime,body"}
@@ -427,6 +433,8 @@ def main():
 
     sp_read = sub.add_parser("read", help="Read a message by Graph ID")
     sp_read.add_argument("message_id")
+    sp_mr = sub.add_parser("markread", help="Mark a message as read by Graph ID")
+    sp_mr.add_argument("message_id")
 
     args = p.parse_args()
     if not args.cmd:
@@ -442,6 +450,8 @@ def main():
             cmd_sync(token, full=args.full)
         case "send":
             cmd_send(token, args.to, args.subject, args.body, args.cc, args.bcc, args.html)
+        case "markread":
+            cmd_markread(token, args.message_id)
         case "search":
             cmd_search(token, args.query, args.top)
         case "folders":
