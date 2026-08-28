@@ -167,6 +167,13 @@ carries the constraint that forced it. Things that bite when writing a
 `Resources` by hand:
 
 - `il` caps wall clock at 7d; `il-lo` allows 21d; `il-interactive` 12h.
+- The partition's own QOS (`il-part`, see `scontrol show partition il`) caps
+  b200s at **2 per user across every QOS**: two `il` b200 jobs block an
+  `il-interactive` b200 job with `QOSMaxGRESPerUser` even though that QOS
+  shows room, and `sacctmgr show qos il-part` is the only place it appears.
+  On 2026-08-28 13:38 two `il-interactive` b200 jobs of mine that had run
+  alongside two `il` ones for hours were cancelled externally (exit 143) at
+  the same second; treat four as never available.
 - 14 cpus per gpu when not `--exclusive`; an `--exclusive` a100 job gets all
   128 cores and, with `mem=None`, all 2017232M — an explicit `--mem` is capped
   lower.
