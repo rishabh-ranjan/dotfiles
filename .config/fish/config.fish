@@ -36,3 +36,5 @@ end
 
 # Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
 set -gx KRB5_CONFIG /afs/cs.stanford.edu/u/ranjanr/.krb5.conf
+
+alias ilcdev "ssh ilc -t /sailhome/ranjanr/.local/bin/dev.sh"

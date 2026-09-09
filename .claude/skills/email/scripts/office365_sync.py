@@ -87,14 +87,27 @@ def get_token():
             return result["access_token"]
 
     redirect_uri = "https://login.microsoftonline.com/common/oauth2/nativeclient"
-    flow = app.initiate_auth_code_flow(scopes=SCOPES, redirect_uri=redirect_uri)
-    print()
-    print("Open this URL in a browser and sign in:")
-    print(flow["auth_uri"])
-    print()
-    print("After signing in, the browser lands on a blank page whose URL contains ?code=...")
-    print("Copy the full URL from the address bar and paste it here.", flush=True)
-    pasted = input("Redirect URL: ").strip()
+    flow_file = TOKEN_CACHE.parent / "auth_flow.json"
+    pasted = os.environ.get("OFFICE365_REDIRECT_URL", "").strip()
+    if pasted and flow_file.exists():
+        flow = json.loads(flow_file.read_text())
+    else:
+        flow = app.initiate_auth_code_flow(scopes=SCOPES, redirect_uri=redirect_uri)
+        flow_file.parent.mkdir(parents=True, exist_ok=True)
+        flow_file.write_text(json.dumps(flow))
+        flow_file.chmod(0o600)
+        print()
+        print("Open this URL in a browser and sign in:")
+        print(flow["auth_uri"])
+        print()
+        print("After signing in, the browser lands on a blank page whose URL contains ?code=...")
+        print("Copy the full URL from the address bar and paste it here.")
+        print("If stdin is not a terminal, re-run as: OFFICE365_REDIRECT_URL='<url>' ... auth", flush=True)
+        try:
+            pasted = input("Redirect URL: ").strip()
+        except EOFError:
+            sys.exit(0)
+    flow_file.unlink(missing_ok=True)
     from urllib.parse import urlparse, parse_qs
     resp = {k: v[0] for k, v in parse_qs(urlparse(pasted).query).items()}
     result = app.acquire_token_by_auth_code_flow(flow, resp)
