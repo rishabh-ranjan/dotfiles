@@ -14,19 +14,21 @@ skill is the workflow around it and what each cluster is like.
 ## 1. Which cluster
 
 **The cluster is the human's call alone.** A submission goes to ILC unless
-the instruction names Marlowe. Marlowe spends a metered allocation shared
-with the group and is never chosen on your own initiative, never as a
-fallback when ILC is full, and never with more than the human said.
+the instruction names Marlowe or AWS. Marlowe spends a metered allocation
+shared with the group and AWS spends fellowship credits in dollars; neither
+is ever chosen on your own initiative, never as a fallback when ILC is full,
+and never with more than the human said.
 
 | cluster | read | code | driven from |
 | --- | --- | --- | --- |
 | ILC | [clusters/ilc.md](clusters/ilc.md) | `roach.slurm.clusters.ilc` | an ILC node (this session's host) |
 | Marlowe | [clusters/marlowe.md](clusters/marlowe.md) | `roach.slurm.clusters.marlowe` | here, over `ssh marlowe` |
+| AWS | [clusters/aws.md](clusters/aws.md) | `roach.slurm.clusters.aws` | here, over `ssh aws` |
 
 Every cluster exists in exactly those two places, under one name: the skill
 file holds the budget, the topology and the tactics; the roach module holds the
-node environment and the `Resources` presets. Adding a cluster means adding
-both. If the cluster is neither here nor there, stop and say so.
+site file (declarations `roach/slurm/node.sh` acts on) and the `Resources`
+presets. Adding a cluster means adding both. If the cluster is neither here nor there, stop and say so.
 
 Sessions run on an ILC node, where `~` is the node-local home and `~/scratch`
 the shared store; every path a submit script passes is written in those
@@ -47,7 +49,8 @@ submit("pkg.module:function", args={...}, resources=AMPERE, cluster=ILC,
 ```
 
 `~` in those three is the *cluster's* home: the same strings submit to
-Marlowe with `cluster=MARLOWE, resources=H100`.
+Marlowe with `cluster=MARLOWE, resources=H100`, and to AWS with
+`cluster=AWS, resources=H100` from `roach.slurm.clusters.aws`.
 
 - **Submit it, do not `srun` it**, a two-minute probe included. The repo lives
   on the submitting host's local disk, which the compute node does not have;
