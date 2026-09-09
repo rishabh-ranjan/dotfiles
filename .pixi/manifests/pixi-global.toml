@@ -124,3 +124,8 @@ exposed = { uv = "uv", uvx = "uvx" }
 channels = ["conda-forge"]
 dependencies = { watch = "*" }
 exposed = { watch = "watch" }
+
+[envs.awscli]
+channels = ["conda-forge"]
+dependencies = { awscli = "*" }
+exposed = { aws = "aws", aws_completer = "aws_completer" }
