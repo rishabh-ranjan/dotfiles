@@ -107,7 +107,6 @@
   "autoUploadSessions": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
   "useAutoModeDuringPlan": true,
   "autoMode": {},
   "voiceEnabled": true,
