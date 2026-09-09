@@ -36,7 +36,7 @@ boot), and ParallelCluster terminates it 5 minutes after it goes idle.
 | `h100-spot` | p5.48xlarge | same | | | spot, reclaimed with 120 s notice |
 | `a100` | p4d.24xlarge | 8 x A100-40G | 96 | 1.1 TB | on demand, ~$33/h |
 | `a100-spot` | p4d.24xlarge | same | | | spot |
-| `a10g` | g5.12xlarge | 4 x A10G-24G | 48 | 192 GB | on demand, ~$5.7/h; probes and debugging, 1 node |
+| `a10g` | g5.2xlarge | 1 x A10G-24G | 8 | 32 GB | on demand, ~$1.2/h; probes and debugging, 1 node |
 
 Up to 4 nodes per queue (`MaxCount` in `cluster.yaml`; raise it and the EC2
 quota together). All in one AZ (us-east-1d) with EFA and a placement group,
