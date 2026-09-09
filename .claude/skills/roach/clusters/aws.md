@@ -2,14 +2,16 @@
 
 An AWS ParallelCluster named `roach` in us-east-1 (account 851687812557,
 the Amazon AI Fellowship's credits). Code: `roach.slurm.clusters.aws`
-(`AWS`, `H100`, `H100_SPOT`, `A100`, `A100_SPOT`); the cluster itself is
+(`AWS`, `H100`, `H100_SPOT`, `A100`, `A100_SPOT`, `A10G`); the cluster itself is
 `roach/slurm/clusters/aws/cluster.yaml`, driven by `pcluster.sh` next to it.
 Monitor: [`scripts/aws-watch.sh`](../scripts/aws-watch.sh).
 
-**Only on the human's instruction, and only the queue and node count the
-human gave.** Every node-hour is dollars off a finite pool of credits, which
-do not apply retroactively: usage past the balance bills the human's card.
-There is no tier to fill and no free card to find.
+**Only on the human's instruction, and only the node count the human
+gave.** The shape is `H100` (a p5.48xlarge) unless the instruction names
+another: per dollar it does the most work. Every node-hour is dollars off a
+finite pool of credits, which do not apply retroactively: usage past the
+balance bills the human's card. There is no tier to fill and no free card
+to find.
 
 ## Remote
 
@@ -34,6 +36,7 @@ boot), and ParallelCluster terminates it 5 minutes after it goes idle.
 | `h100-spot` | p5.48xlarge | same | | | spot, reclaimed with 120 s notice |
 | `a100` | p4d.24xlarge | 8 x A100-40G | 96 | 1.1 TB | on demand, ~$33/h |
 | `a100-spot` | p4d.24xlarge | same | | | spot |
+| `a10g` | g5.12xlarge | 4 x A10G-24G | 48 | 192 GB | on demand, ~$5.7/h; probes and debugging, 1 node |
 
 Up to 4 nodes per queue (`MaxCount` in `cluster.yaml`; raise it and the EC2
 quota together). All in one AZ (us-east-1d) with EFA and a placement group,
