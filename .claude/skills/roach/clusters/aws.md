@@ -49,6 +49,13 @@ so multi-node jobs get the fast interconnect.
 | `/scratch` | the instance's NVMe, formatted at boot | `TMPDIR`; gone with the instance |
 | `/home/ubuntu` | the head node's disk, NFS-exported | nothing |
 
+Measured on the first job (a g5.2xlarge, 2026-09-09): 3.5 min from
+submit to the node accepting the job (`CONFIGURING` while EC2 boots it), then
+`node.sh` installed pixi onto FSx in ~20 s, clone 1 s, `pixi install` 26 s
+with the submitter's lock, and the rank started. Those are the expected gaps
+in a log, not stalls. pixi warns that its repodata cache is on Lustre and
+redirects it to the NVMe: harmless.
+
 **FSx is scratch-class storage with no backup**: a `pcluster delete-cluster`
 deletes it. Anything worth keeping is copied off (to S3, or here) before
 the cluster is torn down.
