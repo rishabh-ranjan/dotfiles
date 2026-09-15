@@ -113,6 +113,17 @@ if (( UPDATE )) || (( ${#missing[@]} )); then
     pixi global sync
 fi
 
+# ---- 3b. npm CLI tools ----
+# pixi global cannot install npm packages, so these go into the nodejs env
+# by hand. ~/.local/bin/agent-browser and ~/.claude/skills/agent-browser are
+# tracked symlinks into that env and dangle until this has run.
+nodejs_bin=$PIXI_HOME/envs/nodejs/bin
+if (( UPDATE )) || [[ ! -x $nodejs_bin/agent-browser ]]; then
+    say "npm install agent-browser"
+    "$nodejs_bin/npm" install -g agent-browser >/dev/null
+    "$nodejs_bin/agent-browser" install >/dev/null
+fi
+
 # ---- 4. node-local dirs everything else assumes ----
 mkdir -p "$HOME/.cache" "/tmp/$USER"
 # ~/scratch is the shared filesystem, the same path on every node, so a job
