@@ -174,10 +174,10 @@ carries the constraint that forced it. Things that bite when writing a
   On 2026-08-28 13:38 two `il-interactive` b200 jobs of mine that had run
   alongside two `il` ones for hours were cancelled externally (exit 143) at
   the same second; treat four as never available.
-- 14 cpus per gpu when not `--exclusive`; an `--exclusive` a100 job gets all
-  128 cores and, with `mem=None`, all 2017232M — an explicit `--mem` is capped
-  lower.
+- An `--exclusive` a100 job gets all 128 cores and, with `mem=None`, all
+  2017232M — an explicit `--mem` is capped lower.
 - `DefMemPerGPU=240000M`: with `mem` a job can hold at most RealMemory / that
   many GPUs (3 on a 770G node); use `mem_per_gpu` to hold a whole node's cards.
-- The ampere nodes carry unrelated cpu-only jobs; demanding `--exclusive`
-  there just queues.
+- Since 2026-09 the `il` partition is gpu-only (cpu work goes to `il-cpu`),
+  so gpu jobs can and should take ampere nodes `--exclusive`; AMPERE_LO does
+  as of roach v0.3.7.
