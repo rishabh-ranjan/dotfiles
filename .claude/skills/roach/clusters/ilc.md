@@ -98,6 +98,17 @@ Two other things that *are* reasons to place a job somewhere else:
   is 12 hours and `il` is 7 days; a run that checkpoints resumes through both,
   one that does not restarts from the top. Do not put a 15-hour eval in a
   12-hour slot.
+- **Retargeting a queued job across QOS tiers changes its wall-clock cap.**
+  `scontrol update job <id> qos=il` on a job submitted with `il-lo`'s 21-day
+  limit leaves it stuck on `QOSMaxWallDurationPerJobLimit` (`il` caps at 7
+  days); update `timelimit=` in the same breath, to at most the target tier's
+  MaxWall. Check the reason within a minute of any qos move.
+- **Count the capped tier's claim in GPUs, running and pending together,
+  before promoting into it.** A pending 8-gpu job already owns 8 of `il`'s
+  ten; promoting a 1-gpu job on a job count (or on running GPUs alone) wedges
+  it behind a full cap of long runners, where it waits longer than it would
+  have on `il-lo`. A job found pending behind your own full cap while the
+  uncapped tier has room is a move to undo, not to wait out.
 
 ### A reservation is il-lo only
 
