@@ -27,7 +27,19 @@
   "disableClaudeAiConnectors": false,
   "skillOverrides": {},
   "disableBundledSkills": false,
-  "hooks": {},
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 120,
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && grep -qs roach pixi.lock pyproject.toml && pixi run python -c 'import roach'; true"
+          }
+        ]
+      }
+    ]
+  },
   "worktree": {
     "baseRef": "head"
   },
