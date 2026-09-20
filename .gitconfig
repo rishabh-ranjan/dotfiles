@@ -13,3 +13,6 @@
 	defaultBranch = main
 [fetch]
 	prune = true
+[credential "https://git.overleaf.com"]
+	username = git
+	helper = "!f() { test \"$1\" = get && echo \"password=$(cat ~/scratch/.secrets/overleaf)\"; }; f"

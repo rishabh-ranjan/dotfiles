@@ -1,7 +1,7 @@
 # Compute resources
 
 Run lightweight commands directly.
-For anything else, submit a slurm job using the `roach` skill.
+For anything else, submit a slurm job using the `roach-slurm` skill.
 
 
 # Files and dependencies
