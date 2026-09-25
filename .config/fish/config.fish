@@ -32,6 +32,7 @@ if test -d $secrets
 	set -x TWINE_USERNAME __token__
 	set -x TWINE_PASSWORD $PYPI_API_TOKEN
 	set -x OFFICE365_TOKEN_CACHE $secrets/office365
+	set -x SUNET_PASSWORD (cat $secrets/sunet)
 end
 
 # Kerberos: stanford.edu realm (FarmShare) — system krb5.conf has stale KDCs
