@@ -1,221 +1,151 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "agentPushNotifEnabled": true,
-  "alwaysThinkingEnabled": true,
-  "askUserQuestionTimeout": "5m",
-  "attribution": {},
-  "autoCompactEnabled": true,
-  "autoMemoryEnabled": false,
-  "autoMode": {},
-  "autoScrollEnabled": true,
-  "autoUpdatesChannel": "latest",
-  "autoUploadSessions": true,
-  "awaySummaryEnabled": false,
-  "axScreenReader": false,
-  "claudeMdExcludes": [],
-  "cleanupPeriodDays": 30,
-  "companyAnnouncements": [],
-  "defaultShell": "bash",
-  "defaultView": "chat",
-  "disableAgentView": false,
-  "disableAllHooks": false,
-  "disableArtifact": false,
-  "disableBundledSkills": false,
-  "disableClaudeAiConnectors": false,
-  "disabledMcpjsonServers": [],
-  "disableRemoteControl": false,
-  "disableSkillShellExecution": false,
-  "disableWorkflows": false,
-  "editorMode": "vim",
-  "effortLevel": "low",
-  "enableAllProjectMcpServers": false,
-  "enableArtifact": true,
-  "enabledMcpjsonServers": [],
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
+  "$schema" : "https:\/\/json.schemastore.org\/claude-code-settings.json",
+  "agentPushNotifEnabled" : true,
+  "alwaysThinkingEnabled" : true,
+  "askUserQuestionTimeout" : "5m",
+  "attribution" : {
+
   },
-  "enableWorkflows": false,
-  "env": {
-    "CLAUDE_AUTO_BACKGROUND_TASKS": "1",
-    "CLAUDE_CODE_SHELL": "/bin/bash",
-    "SHELL": "/bin/bash"
+  "autoCompactEnabled" : true,
+  "autoMemoryEnabled" : false,
+  "autoMode" : {
+
   },
-  "extraKnownMarketplaces": {
-    "claude-plugins-official": {
-      "source": {
-        "repo": "anthropics/claude-plugins-official",
-        "source": "github"
+  "autoScrollEnabled" : true,
+  "autoUpdatesChannel" : "latest",
+  "autoUploadSessions" : true,
+  "awaySummaryEnabled" : false,
+  "axScreenReader" : false,
+  "claudeMdExcludes" : [
+
+  ],
+  "cleanupPeriodDays" : 30,
+  "companyAnnouncements" : [
+
+  ],
+  "defaultShell" : "bash",
+  "defaultView" : "chat",
+  "disableAgentView" : false,
+  "disableAllHooks" : false,
+  "disableArtifact" : false,
+  "disableBundledSkills" : false,
+  "disableClaudeAiConnectors" : false,
+  "disabledMcpjsonServers" : [
+
+  ],
+  "disableRemoteControl" : false,
+  "disableSkillShellExecution" : false,
+  "disableWorkflows" : false,
+  "editorMode" : "vim",
+  "effortLevel" : "low",
+  "enableAllProjectMcpServers" : false,
+  "enableArtifact" : true,
+  "enabledMcpjsonServers" : [
+
+  ],
+  "enabledPlugins" : {
+    "frontend-design@claude-plugins-official" : true
+  },
+  "enableWorkflows" : false,
+  "env" : {
+    "CLAUDE_AUTO_BACKGROUND_TASKS" : "1",
+    "CLAUDE_CODE_SHELL" : "\/bin\/bash",
+    "SHELL" : "\/bin\/bash"
+  },
+  "extraKnownMarketplaces" : {
+    "claude-plugins-official" : {
+      "source" : {
+        "repo" : "anthropics\/claude-plugins-official",
+        "source" : "github"
       }
     }
   },
-  "fallbackModel": [
+  "fallbackModel" : [
     "default"
   ],
-  "fastModePerSessionOptIn": true,
-  "fileCheckpointingEnabled": true,
-  "hooks": {
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "StopFailure": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "/Users/ranjanr/.config/iterm2/cc-status",
-            "type": "command"
-          }
-        ]
-      }
-    ]
-  },
-  "includeCoAuthoredBy": true,
-  "includeGitInstructions": false,
-  "inputNeededNotifEnabled": true,
-  "isolatePeerMachines": false,
-  "language": "english",
-  "model": "opus",
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "low"
+  "fastModePerSessionOptIn" : true,
+  "fileCheckpointingEnabled" : true,
+  "includeCoAuthoredBy" : true,
+  "includeGitInstructions" : false,
+  "inputNeededNotifEnabled" : true,
+  "isolatePeerMachines" : false,
+  "language" : "english",
+  "model" : "opus",
+  "modelSettings" : {
+    "claude-opus-5-5" : {
+      "effortLevel" : "low"
     }
   },
-  "outputStyle": "Concise",
-  "permissions": {
-    "additionalDirectories": [],
-    "allow": [],
-    "ask": [],
-    "defaultMode": "dontAsk",
-    "deny": []
+  "outputStyle" : "Concise",
+  "permissions" : {
+    "additionalDirectories" : [
+
+    ],
+    "allow" : [
+
+    ],
+    "ask" : [
+
+    ],
+    "defaultMode" : "dontAsk",
+    "deny" : [
+
+    ]
   },
-  "pluginConfigs": {},
-  "preferredNotifChannel": "auto",
-  "prefersReducedMotion": false,
-  "promptSuggestionEnabled": false,
-  "remote": {},
-  "remoteControlAtStartup": true,
-  "respectGitignore": false,
-  "respondToBashCommands": true,
-  "sandbox": {},
-  "showClearContextOnPlanAccept": false,
-  "showMessageTimestamps": true,
-  "showThinkingSummaries": false,
-  "showTurnDuration": true,
-  "skillOverrides": {},
-  "skipDangerousModePermissionPrompt": true,
-  "skipWebFetchPreflight": false,
-  "spinnerTipsEnabled": true,
-  "spinnerVerbs": {
-    "mode": "append",
-    "verbs": []
+  "pluginConfigs" : {
+
   },
-  "switchModelsOnFlag": false,
-  "syntaxHighlightingDisabled": false,
-  "teammateMode": "auto",
-  "terminalProgressBarEnabled": true,
-  "terminalTitleFromRename": true,
-  "theme": "light",
-  "todoFeatureEnabled": true,
-  "tui": "fullscreen",
-  "useAutoModeDuringPlan": true,
-  "verbose": false,
-  "viewMode": "focus",
-  "vimInsertModeRemaps": {},
-  "voice": {
-    "autoSubmit": false,
-    "enabled": true,
-    "mode": "hold"
+  "preferredNotifChannel" : "auto",
+  "prefersReducedMotion" : false,
+  "promptSuggestionEnabled" : false,
+  "remote" : {
+
   },
-  "voiceEnabled": true,
-  "wheelScrollAccelerationEnabled": true,
-  "workflowKeywordTriggerEnabled": false,
-  "worktree": {
-    "baseRef": "head"
+  "remoteControlAtStartup" : true,
+  "respectGitignore" : false,
+  "respondToBashCommands" : true,
+  "sandbox" : {
+
+  },
+  "showClearContextOnPlanAccept" : false,
+  "showMessageTimestamps" : true,
+  "showThinkingSummaries" : false,
+  "showTurnDuration" : true,
+  "skillOverrides" : {
+
+  },
+  "skipDangerousModePermissionPrompt" : true,
+  "skipWebFetchPreflight" : false,
+  "spinnerTipsEnabled" : true,
+  "spinnerVerbs" : {
+    "mode" : "append",
+    "verbs" : [
+
+    ]
+  },
+  "switchModelsOnFlag" : false,
+  "syntaxHighlightingDisabled" : false,
+  "teammateMode" : "auto",
+  "terminalProgressBarEnabled" : true,
+  "terminalTitleFromRename" : true,
+  "theme" : "light",
+  "todoFeatureEnabled" : true,
+  "tui" : "fullscreen",
+  "useAutoModeDuringPlan" : true,
+  "verbose" : false,
+  "viewMode" : "focus",
+  "vimInsertModeRemaps" : {
+
+  },
+  "voice" : {
+    "autoSubmit" : false,
+    "enabled" : true,
+    "mode" : "hold"
+  },
+  "voiceEnabled" : true,
+  "wheelScrollAccelerationEnabled" : true,
+  "workflowKeywordTriggerEnabled" : false,
+  "worktree" : {
+    "baseRef" : "head"
   }
 }
