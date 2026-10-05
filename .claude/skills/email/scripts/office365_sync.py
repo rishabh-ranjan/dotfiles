@@ -333,6 +333,28 @@ def cmd_send(token, to, subject, body, cc=None, bcc=None, html=False):
     print("Sent!")
 
 
+def cmd_reply(token, message_id, body, reply_all=False, to=None, cc=None, bcc=None, html=False):
+    import html as html_lib
+
+    action = "createReplyAll" if reply_all else "createReply"
+    resp = requests.post(f"{GRAPH}/me/messages/{message_id}/{action}", headers=headers(token))
+    resp.raise_for_status()
+    draft = resp.json()
+    content = body if html else html_lib.escape(body).replace("\n", "<br>\n")
+    quoted = draft["body"]["content"]
+    if draft["body"]["contentType"].lower() != "html":
+        quoted = "<pre>" + html_lib.escape(quoted) + "</pre>"
+    patch = {"body": {"contentType": "HTML", "content": f"<div>{content}</div><br>{quoted}"}}
+    for key, val in (("toRecipients", to), ("ccRecipients", cc), ("bccRecipients", bcc)):
+        if val:
+            patch[key] = [{"emailAddress": {"address": a.strip()}} for a in val.split(",")]
+    resp = requests.patch(f"{GRAPH}/me/messages/{draft['id']}", headers={**headers(token), "Content-Type": "application/json"}, json=patch)
+    resp.raise_for_status()
+    resp = requests.post(f"{GRAPH}/me/messages/{draft['id']}/send", headers=headers(token))
+    resp.raise_for_status()
+    print("Sent!")
+
+
 # --- Search ------------------------------------------------------------------
 
 
@@ -440,6 +462,15 @@ def main():
     sp_send.add_argument("--bcc")
     sp_send.add_argument("--html", action="store_true")
 
+    sp_reply = sub.add_parser("reply", help="Reply in a message's thread (quotes the original)")
+    sp_reply.add_argument("message_id")
+    sp_reply.add_argument("--body", required=True)
+    sp_reply.add_argument("--all", action="store_true", help="reply to all")
+    sp_reply.add_argument("--to", help="replace the To recipients")
+    sp_reply.add_argument("--cc", help="replace the Cc recipients")
+    sp_reply.add_argument("--bcc")
+    sp_reply.add_argument("--html", action="store_true")
+
     sp_search = sub.add_parser("search", help="Search emails via Graph API")
     sp_search.add_argument("query")
     sp_search.add_argument("--top", type=int, default=25)
@@ -463,6 +494,8 @@ def main():
             cmd_sync(token, full=args.full)
         case "send":
             cmd_send(token, args.to, args.subject, args.body, args.cc, args.bcc, args.html)
+        case "reply":
+            cmd_reply(token, args.message_id, args.body, args.all, args.to, args.cc, args.bcc, args.html)
         case "markread":
             cmd_markread(token, args.message_id)
         case "search":

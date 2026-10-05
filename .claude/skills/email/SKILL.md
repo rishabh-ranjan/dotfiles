@@ -26,6 +26,7 @@ Do NOT ask the user to copy the script to `~/Mail/` — it should be run in-plac
 - **Sync**: Download all mail folders into a local Maildir (`~/Mail/Stanford/`) for indexing with `notmuch`.
 - **Search**: Query the mailbox via the Graph `$search` endpoint.
 - **Send**: Send plain or HTML email with optional CC/BCC.
+- **Reply**: Reply in an existing thread (quoting the original).
 - **Read**: Fetch and display a single message by ID.
 - **Folders**: List all mail folders with unread counts.
 
@@ -107,6 +108,14 @@ uv run "<skill-base-dir>/scripts/office365_sync.py" send \
 For HTML emails, add `--html`. For CC/BCC, use `--cc` / `--bcc`.
 
 **Confirm with the user before sending.** Always show the composed message and ask "Send this?" before running the command.
+
+### Replying in a thread
+
+```bash
+uv run "<skill-base-dir>/scripts/office365_sync.py" reply <message-id> --body "Reply text"
+```
+
+Replies in the original conversation (same thread, "RE:" subject, original quoted below). Add `--all` to reply to all; `--to` / `--cc` replace the recipients of the reply. Get the message ID from `search`. **Confirm with the user before sending**, as for `send`.
 
 ### Reading a specific message
 
