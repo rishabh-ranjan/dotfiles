@@ -17,7 +17,7 @@
     "defaultMode": "dontAsk",
     "additionalDirectories": []
   },
-  "model": "fable",
+  "model": "opus[1m]",
   "fallbackModel": [
     "default"
   ],
@@ -65,11 +65,8 @@
   "syntaxHighlightingDisabled": false,
   "terminalTitleFromRename": true,
   "alwaysThinkingEnabled": true,
-  "effortLevel": "low",
   "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "low"
-    }
+    "claude-opus-5-5": {}
   },
   "fastModePerSessionOptIn": true,
   "promptSuggestionEnabled": false,

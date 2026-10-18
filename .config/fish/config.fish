@@ -11,6 +11,10 @@ set -x LANG en_US.UTF-8
 set -x LANGUAGE en_US.UTF-8
 set -x LC_ALL en_US.UTF-8
 
+# $HOME is node-local lfs here; the inherited PATH carries the AFS .local/bin.
+# Prepend this node's $HOME/.local/bin so per-node installs (e.g. claude) win.
+fish_add_path -gp $HOME/.local/bin
+
 set -x PYTHONPATH "$HOME/.config/python"
 
 set -x WANDB_DIR "$HOME/.cache/"
